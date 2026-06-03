@@ -12,12 +12,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.wiremock.spring.ConfigureWireMock;
 import org.wiremock.spring.EnableWireMock;
 import org.wiremock.spring.InjectWireMock;
+import reactor.test.StepVerifier;
 
 import com.github.tomakehurst.wiremock.http.Fault;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Integration tests for {@link SystemBClient} using WireMock to simulate System B.
@@ -60,7 +60,7 @@ class SystemBClientTest {
                         .withHeader("Content-Type", "application/xml")
                         .withBody(ACTIVE_XML)));
 
-        InsuranceData result = client.fetchById(PATIENT_ID);
+        InsuranceData result = client.fetchById(PATIENT_ID).block();
 
         assertThat(result.id()).isEqualTo("123");
         assertThat(result.name()).isEqualTo("Aliaksei Kozel");
@@ -78,7 +78,7 @@ class SystemBClientTest {
                                  birth_date="1990-01-01" is_active="false"/>
                                 """)));
 
-        assertThat(client.fetchById(PATIENT_ID).active()).isFalse();
+        assertThat(client.fetchById(PATIENT_ID).block().active()).isFalse();
     }
 
     @Test
@@ -86,9 +86,12 @@ class SystemBClientTest {
         wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
                 .willReturn(aResponse().withStatus(404)));
 
-        assertThatThrownBy(() -> client.fetchById(PATIENT_ID))
-                .isInstanceOf(InsuranceNotFoundException.class)
-                .hasMessageContaining(PATIENT_ID);
+        StepVerifier.create(client.fetchById(PATIENT_ID))
+                .expectErrorSatisfies(ex -> {
+                    assertThat(ex).isInstanceOf(InsuranceNotFoundException.class)
+                            .hasMessageContaining(PATIENT_ID);
+                })
+                .verify();
     }
 
     @Test
@@ -96,9 +99,12 @@ class SystemBClientTest {
         wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
                 .willReturn(aResponse().withStatus(500)));
 
-        assertThatThrownBy(() -> client.fetchById(PATIENT_ID))
-                .isInstanceOf(UpstreamServiceException.class)
-                .satisfies(ex -> assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(500));
+        StepVerifier.create(client.fetchById(PATIENT_ID))
+                .expectErrorSatisfies(ex -> {
+                    assertThat(ex).isInstanceOf(UpstreamServiceException.class);
+                    assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(500);
+                })
+                .verify();
     }
 
     @Test
@@ -106,9 +112,12 @@ class SystemBClientTest {
         wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
                 .willReturn(aResponse().withStatus(503)));
 
-        assertThatThrownBy(() -> client.fetchById(PATIENT_ID))
-                .isInstanceOf(UpstreamServiceException.class)
-                .satisfies(ex -> assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(503));
+        StepVerifier.create(client.fetchById(PATIENT_ID))
+                .expectErrorSatisfies(ex -> {
+                    assertThat(ex).isInstanceOf(UpstreamServiceException.class);
+                    assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(503);
+                })
+                .verify();
     }
 
     @Test
@@ -116,8 +125,11 @@ class SystemBClientTest {
         wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
                 .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
 
-        assertThatThrownBy(() -> client.fetchById(PATIENT_ID))
-                .isInstanceOf(UpstreamServiceException.class)
-                .satisfies(ex -> assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(503));
+        StepVerifier.create(client.fetchById(PATIENT_ID))
+                .expectErrorSatisfies(ex -> {
+                    assertThat(ex).isInstanceOf(UpstreamServiceException.class);
+                    assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(503);
+                })
+                .verify();
     }
 }

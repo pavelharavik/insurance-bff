@@ -6,66 +6,72 @@ import com.insurance.bff.model.InsuranceData;
 import com.insurance.bff.service.InsuranceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(InsuranceController.class)
+@WebFluxTest(InsuranceController.class)
 class InsuranceControllerTest {
 
-    private static final String       PATIENT_ID = "123";
+    private static final String        PATIENT_ID = "123";
     private static final InsuranceData DATA       = new InsuranceData("123", "Alice", true);
 
     @Autowired
-    private MockMvc mockMvc;
+    private WebTestClient webTestClient;
 
     @MockitoBean
     private InsuranceService insuranceService;
 
     @Test
-    void getInsurance_returns200_withMappedFields() throws Exception {
-        when(insuranceService.getInsuranceData(PATIENT_ID)).thenReturn(DATA);
+    void getInsurance_returns200_withMappedFields() {
+        when(insuranceService.getInsuranceData(PATIENT_ID)).thenReturn(Mono.just(DATA));
 
-        mockMvc.perform(get("/insurance/{id}", PATIENT_ID))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("123"))
-                .andExpect(jsonPath("$.name").value("Alice"))
-                .andExpect(jsonPath("$.is_active").value(true))
-                .andExpect(jsonPath("$.current_date").exists());
+        webTestClient.get().uri("/insurance/{id}", PATIENT_ID)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo("123")
+                .jsonPath("$.name").isEqualTo("Alice")
+                .jsonPath("$.is_active").isEqualTo(true)
+                .jsonPath("$.current_date").exists();
     }
 
     @Test
-    void getInsurance_returns404_onInsuranceNotFoundException() throws Exception {
+    void getInsurance_returns404_onInsuranceNotFoundException() {
         when(insuranceService.getInsuranceData(PATIENT_ID))
-                .thenThrow(new InsuranceNotFoundException(PATIENT_ID));
+                .thenReturn(Mono.error(new InsuranceNotFoundException(PATIENT_ID)));
 
-        mockMvc.perform(get("/insurance/{id}", PATIENT_ID))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.detail").value("No insurance record found for patient: " + PATIENT_ID));
+        webTestClient.get().uri("/insurance/{id}", PATIENT_ID)
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo("No insurance record found for patient: " + PATIENT_ID);
     }
 
     @Test
-    void getInsurance_returns500_onUpstreamServiceException500() throws Exception {
+    void getInsurance_returns500_onUpstreamServiceException500() {
         when(insuranceService.getInsuranceData(PATIENT_ID))
-                .thenThrow(new UpstreamServiceException(500));
+                .thenReturn(Mono.error(new UpstreamServiceException(500)));
 
-        mockMvc.perform(get("/insurance/{id}", PATIENT_ID))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.detail").value("Upstream service error"));
+        webTestClient.get().uri("/insurance/{id}", PATIENT_ID)
+                .exchange()
+                .expectStatus().isEqualTo(500)
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo("Upstream service error");
     }
 
     @Test
-    void getInsurance_returns503_onUpstreamServiceException503() throws Exception {
+    void getInsurance_returns503_onUpstreamServiceException503() {
         when(insuranceService.getInsuranceData(PATIENT_ID))
-                .thenThrow(new UpstreamServiceException(503));
+                .thenReturn(Mono.error(new UpstreamServiceException(503)));
 
-        mockMvc.perform(get("/insurance/{id}", PATIENT_ID))
-                .andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.detail").value("Upstream service error"));
+        webTestClient.get().uri("/insurance/{id}", PATIENT_ID)
+                .exchange()
+                .expectStatus().isEqualTo(503)
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo("Upstream service error");
     }
 }

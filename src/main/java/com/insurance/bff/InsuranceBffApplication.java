@@ -10,12 +10,9 @@ import org.springframework.cache.annotation.EnableCaching;
  * <p>Responsibilities:
  * <ul>
  *   <li>Accept doctor requests for patient insurance data by ID.</li>
- *   <li>Fan out to System A and System B concurrently via virtual threads.</li>
+ *   <li>Fan out to System A and System B concurrently via Reactor operators.</li>
  *   <li>Return the first HTTP 200 response, normalised to a unified format.</li>
  * </ul>
- *
- * <p>Virtual threads are activated globally via {@code spring.threads.virtual.enabled=true}
- * in {@code application.yml}, so no per-request configuration is required here.
  */
 @SpringBootApplication
 @EnableCaching

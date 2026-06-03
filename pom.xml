@@ -12,10 +12,10 @@
     </parent>
 
     <groupId>com.insurance</groupId>
-    <artifactId>insurance-bff</artifactId>
+    <artifactId>insurance-bff-reactive</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>insurance-bff</name>
-    <description>Backend for Frontend — aggregates patient insurance data from System A and System B</description>
+    <name>insurance-bff-reactive</name>
+    <description>Backend for Frontend — aggregates patient insurance data from System A and System B (Spring WebFlux)</description>
 
     <properties>
         <java.version>25</java.version>
@@ -30,7 +30,7 @@
         <!-- ── Core ─────────────────────────────────────────────────────── -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
         <!-- ── Cache (Caffeine) ──────────────────────────────────────────── -->
@@ -47,6 +47,12 @@
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-spring-boot3</artifactId>
+            <version>${resilience4j.version}</version>
+        </dependency>
+        <!-- Reactor operators for @CircuitBreaker on Mono/Flux return types -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-reactor</artifactId>
             <version>${resilience4j.version}</version>
         </dependency>
         <!-- Required for @CircuitBreaker annotations -->
@@ -70,7 +76,7 @@
         <!-- ── OpenAPI / Swagger UI ─────────────────────────────────────── -->
         <dependency>
             <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
             <version>2.8.8</version>
         </dependency>
 
@@ -78,6 +84,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -97,19 +108,15 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
-            <!-- Java 25 with enable-preview for Structured Concurrency -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <release>25</release>
-                    <compilerArgs>
-                        <arg>--enable-preview</arg>
-                    </compilerArgs>
                 </configuration>
             </plugin>
 
-            <!-- Resolves dependency jar paths into Maven properties (e.g. ${org.mockito:mockito-core:jar}) -->
+            <!-- Resolves dependency jar paths into Maven properties -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -119,16 +126,6 @@
                         <goals><goal>properties</goal></goals>
                     </execution>
                 </executions>
-            </plugin>
-
-            <!-- Pass enable-preview flag to the JVM running tests -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <!-- @{argLine} late-bound so JaCoCo can prepend its agent -->
-                    <argLine>@{argLine} --enable-preview</argLine>
-                </configuration>
             </plugin>
 
             <!-- Static analysis -->

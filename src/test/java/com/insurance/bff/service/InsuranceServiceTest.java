@@ -5,9 +5,10 @@ import com.insurance.bff.exception.InsuranceNotFoundException;
 import com.insurance.bff.exception.UpstreamServiceException;
 import com.insurance.bff.model.InsuranceData;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link InsuranceService}.
@@ -23,11 +24,11 @@ class InsuranceServiceTest {
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static InsuranceClient returning(InsuranceData data) {
-        return patientId -> data;
+        return patientId -> Mono.just(data);
     }
 
     private static InsuranceClient throwing(RuntimeException ex) {
-        return patientId -> { throw ex; };
+        return patientId -> Mono.error(ex);
     }
 
     private InsuranceService service(InsuranceClient a, InsuranceClient b) {
@@ -40,21 +41,27 @@ class InsuranceServiceTest {
     void getInsuranceData_returnsAResult_whenOnlyASucceeds() {
         var svc = service(returning(DATA_A), throwing(new InsuranceNotFoundException(PATIENT_ID)));
 
-        assertThat(svc.getInsuranceData(PATIENT_ID)).isEqualTo(DATA_A);
+        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+                .expectNext(DATA_A)
+                .verifyComplete();
     }
 
     @Test
     void getInsuranceData_returnsBResult_whenOnlyBSucceeds() {
         var svc = service(throwing(new InsuranceNotFoundException(PATIENT_ID)), returning(DATA_B));
 
-        assertThat(svc.getInsuranceData(PATIENT_ID)).isEqualTo(DATA_B);
+        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+                .expectNext(DATA_B)
+                .verifyComplete();
     }
 
     @Test
     void getInsuranceData_returnsEitherResult_whenBothSucceed() {
         var svc = service(returning(DATA_A), returning(DATA_B));
 
-        assertThat(svc.getInsuranceData(PATIENT_ID)).isIn(DATA_A, DATA_B);
+        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+                .assertNext(data -> assertThat(data).isIn(DATA_A, DATA_B))
+                .verifyComplete();
     }
 
     // ── Error priority cases ──────────────────────────────────────────────────
@@ -65,8 +72,9 @@ class InsuranceServiceTest {
                 throwing(new InsuranceNotFoundException(PATIENT_ID)),
                 throwing(new InsuranceNotFoundException(PATIENT_ID)));
 
-        assertThatThrownBy(() -> svc.getInsuranceData(PATIENT_ID))
-                .isInstanceOf(InsuranceNotFoundException.class);
+        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+                .expectError(InsuranceNotFoundException.class)
+                .verify();
     }
 
     @Test
@@ -75,9 +83,12 @@ class InsuranceServiceTest {
                 throwing(new UpstreamServiceException(500)),
                 throwing(new InsuranceNotFoundException(PATIENT_ID)));
 
-        assertThatThrownBy(() -> svc.getInsuranceData(PATIENT_ID))
-                .isInstanceOf(UpstreamServiceException.class)
-                .satisfies(ex -> assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(500));
+        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+                .expectErrorSatisfies(ex -> {
+                    assertThat(ex).isInstanceOf(UpstreamServiceException.class);
+                    assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(500);
+                })
+                .verify();
     }
 
     @Test
@@ -86,9 +97,12 @@ class InsuranceServiceTest {
                 throwing(new InsuranceNotFoundException(PATIENT_ID)),
                 throwing(new UpstreamServiceException(503)));
 
-        assertThatThrownBy(() -> svc.getInsuranceData(PATIENT_ID))
-                .isInstanceOf(UpstreamServiceException.class)
-                .satisfies(ex -> assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(503));
+        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+                .expectErrorSatisfies(ex -> {
+                    assertThat(ex).isInstanceOf(UpstreamServiceException.class);
+                    assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(503);
+                })
+                .verify();
     }
 
     @Test
@@ -97,9 +111,12 @@ class InsuranceServiceTest {
                 throwing(new UpstreamServiceException(500)),
                 throwing(new UpstreamServiceException(503)));
 
-        assertThatThrownBy(() -> svc.getInsuranceData(PATIENT_ID))
-                .isInstanceOf(UpstreamServiceException.class)
-                .satisfies(ex -> assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(500));
+        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+                .expectErrorSatisfies(ex -> {
+                    assertThat(ex).isInstanceOf(UpstreamServiceException.class);
+                    assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(500);
+                })
+                .verify();
     }
 
     @Test
@@ -108,8 +125,11 @@ class InsuranceServiceTest {
                 throwing(new UpstreamServiceException(503)),
                 throwing(new UpstreamServiceException(503)));
 
-        assertThatThrownBy(() -> svc.getInsuranceData(PATIENT_ID))
-                .isInstanceOf(UpstreamServiceException.class)
-                .satisfies(ex -> assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(503));
+        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+                .expectErrorSatisfies(ex -> {
+                    assertThat(ex).isInstanceOf(UpstreamServiceException.class);
+                    assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(503);
+                })
+                .verify();
     }
 }

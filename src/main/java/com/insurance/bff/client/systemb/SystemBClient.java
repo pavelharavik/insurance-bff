@@ -7,7 +7,8 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 /**
  * Fetches insurance data from System B over HTTP/XML.
@@ -20,18 +21,19 @@ public class SystemBClient extends AbstractHttpInsuranceClient {
     private final SystemBMapper mapper;
 
     public SystemBClient(
-            @Qualifier("systemBRestClient") RestClient restClient,
+            @Qualifier("systemBWebClient") WebClient webClient,
             SystemBMapper mapper) {
-        super(restClient);
+        super(webClient);
         this.mapper = mapper;
     }
 
     @Override
     @CircuitBreaker(name = "system-b")
-    public InsuranceData fetchById(String patientId) {
-        return mapper.map(fetch(
-                restClient.get().uri("/insurance/{id}", patientId).accept(MediaType.APPLICATION_XML),
+    public Mono<InsuranceData> fetchById(String patientId) {
+        return fetch(
+                webClient.get().uri("/insurance/{id}", patientId).accept(MediaType.APPLICATION_XML),
                 SystemBResponse.class,
-                patientId));
+                patientId)
+                .map(mapper::map);
     }
 }

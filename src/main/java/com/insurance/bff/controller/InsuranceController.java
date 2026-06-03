@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 /**
  * REST entry point for patient insurance lookups.
@@ -27,7 +28,7 @@ public class InsuranceController {
      * @return insurance response with BFF timestamp
      */
     @GetMapping("/{patientId}")
-    public InsuranceResponse getInsurance(@PathVariable String patientId) {
-        return InsuranceResponse.from(insuranceService.getInsuranceData(patientId));
+    public Mono<InsuranceResponse> getInsurance(@PathVariable String patientId) {
+        return insuranceService.getInsuranceData(patientId).map(InsuranceResponse::from);
     }
 }

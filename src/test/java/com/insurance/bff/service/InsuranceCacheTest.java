@@ -17,6 +17,7 @@ import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import reactor.core.publisher.Mono;
 
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -25,9 +26,9 @@ import static org.mockito.Mockito.when;
 /**
  * Verifies that {@link InsuranceService#getInsuranceData} caches results by patient ID.
  *
- * <p>Client B always throws {@link InsuranceNotFoundException}, making client A the only
- * possible success path. This removes non-determinism from the race between the two virtual
- * threads, so {@code verify(clientA, times(1))} is a reliable assertion.
+ * <p>Client B always returns an error, making client A the only possible success path.
+ * This removes non-determinism from the race between the two reactive subscriptions,
+ * so {@code verify(clientA, times(1))} is a reliable assertion.
  */
 @ExtendWith(SpringExtension.class)
 @Import({InsuranceService.class, InsuranceCacheTest.TestConfig.class})
@@ -47,13 +48,14 @@ class InsuranceCacheTest {
 
         @Bean("systemBClient")
         InsuranceClient clientB() {
-            return id -> { throw new InsuranceNotFoundException(id); };
+            return id -> Mono.error(new InsuranceNotFoundException(id));
         }
 
         @Bean
         CacheManager cacheManager() {
             CaffeineCacheManager manager = new CaffeineCacheManager("insurance");
             manager.setCaffeine(Caffeine.newBuilder().maximumSize(100));
+            manager.setAsyncCacheMode(true);
             return manager;
         }
     }
@@ -69,22 +71,22 @@ class InsuranceCacheTest {
     }
 
     @Test
-    void getInsuranceData_doesNotHitUpstream_onCacheHit() throws Exception {
-        when(clientA.fetchById(PATIENT_ID)).thenReturn(DATA);
+    void getInsuranceData_doesNotHitUpstream_onCacheHit() {
+        when(clientA.fetchById(PATIENT_ID)).thenReturn(Mono.just(DATA));
 
-        insuranceService.getInsuranceData(PATIENT_ID);
-        insuranceService.getInsuranceData(PATIENT_ID);
+        insuranceService.getInsuranceData(PATIENT_ID).block();
+        insuranceService.getInsuranceData(PATIENT_ID).block();
 
         verify(clientA, times(1)).fetchById(PATIENT_ID);
     }
 
     @Test
-    void getInsuranceData_hitsUpstreamForEachDistinctPatientId() throws Exception {
-        when(clientA.fetchById("111")).thenReturn(new InsuranceData("111", "Alice", true));
-        when(clientA.fetchById("222")).thenReturn(new InsuranceData("222", "Bob", false));
+    void getInsuranceData_hitsUpstreamForEachDistinctPatientId() {
+        when(clientA.fetchById("111")).thenReturn(Mono.just(new InsuranceData("111", "Alice", true)));
+        when(clientA.fetchById("222")).thenReturn(Mono.just(new InsuranceData("222", "Bob", false)));
 
-        insuranceService.getInsuranceData("111");
-        insuranceService.getInsuranceData("222");
+        insuranceService.getInsuranceData("111").block();
+        insuranceService.getInsuranceData("222").block();
 
         verify(clientA, times(1)).fetchById("111");
         verify(clientA, times(1)).fetchById("222");

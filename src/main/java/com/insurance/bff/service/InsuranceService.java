@@ -7,17 +7,14 @@ import com.insurance.bff.model.InsuranceData;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.StructuredTaskScope;
+import reactor.core.publisher.Mono;
 
 /**
  * Orchestrates parallel insurance lookups across System A and System B.
  *
- * <p>Both upstreams are queried concurrently via virtual threads. The first
- * successful result wins. If both fail, the error with the highest priority is
- * re-thrown: 500 &gt; 503 &gt; 404.
+ * <p>Both upstreams are subscribed to concurrently. The first successful result
+ * wins. If both fail, the error with the highest priority is propagated:
+ * 500 &gt; 503 &gt; 404.
  */
 @Service
 public class InsuranceService {
@@ -34,30 +31,26 @@ public class InsuranceService {
 
     /**
      * @param patientId the patient ID to look up
-     * @return normalised insurance data from whichever upstream responds first with 200
-     * @throws InsuranceNotFoundException if both upstreams return 404
-     * @throws UpstreamServiceException   with the highest-priority status code if both fail
+     * @return a {@link Mono} emitting data from whichever upstream responds first with 200
      */
     @Cacheable("insurance")
-    public InsuranceData getInsuranceData(String patientId) {
-        List<RuntimeException> errors = new CopyOnWriteArrayList<>();
-        try (var scope = StructuredTaskScope.open(
-                StructuredTaskScope.Joiner.<InsuranceData>anySuccessfulResultOrThrow())) {
+    public Mono<InsuranceData> getInsuranceData(String patientId) {
+        Mono<InsuranceData> monoA = clientA.fetchById(patientId).cache();
+        Mono<InsuranceData> monoB = clientB.fetchById(patientId).cache();
 
-            scope.fork(() -> fetchCapturing(clientA, patientId, errors));
-            scope.fork(() -> fetchCapturing(clientB, patientId, errors));
+        return Mono.firstWithValue(monoA, monoB)
+                .onErrorResume(e -> captureError(monoA).zipWith(captureError(monoB))
+                        .flatMap(t -> Mono.error(selectByPriority(t.getT1(), t.getT2()))));
+    }
 
-            return scope.join();
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            // 503 signals a transient, retryable failure — appropriate for a cancelled scope
-            throw new UpstreamServiceException(503, e);
-        } catch (Exception e) {
-            if (errors.size() == 2) throw selectByPriority(errors.get(0), errors.get(1));
-            if (!errors.isEmpty())  throw errors.get(0);
-            throw new UpstreamServiceException(503, e);
-        }
+    /**
+     * Returns the error from a cached Mono that is known to have failed.
+     * If the Mono succeeds (should not happen in the error-recovery path), returns empty.
+     */
+    private Mono<RuntimeException> captureError(Mono<InsuranceData> mono) {
+        return mono
+                .flatMap(ignored -> Mono.<RuntimeException>empty())
+                .onErrorResume(e -> Mono.just((RuntimeException) e));
     }
 
     private RuntimeException selectByPriority(RuntimeException errorA, RuntimeException errorB) {
@@ -76,15 +69,4 @@ public class InsuranceService {
             default  -> 3;
         };
     }
-
-    private InsuranceData fetchCapturing(InsuranceClient client, String patientId,
-                                          List<RuntimeException> errors) {
-        try {
-            return client.fetchById(patientId);
-        } catch (RuntimeException e) {
-            errors.add(e);
-            throw e;
-        }
-    }
-
 }

@@ -3,10 +3,7 @@ server:
 
 spring:
   application:
-    name: insurance-bff
-  threads:
-    virtual:
-      enabled: true          # Tomcat worker threads become virtual threads
+    name: insurance-bff-reactive
   jackson:
     serialization:
       write-dates-as-timestamps: false  # Instant → "2026-05-29T00:00:00Z", not epoch millis
@@ -16,6 +13,7 @@ spring:
       - insurance
     caffeine:
       spec: maximumSize=10000,expireAfterWrite=60s
+      async-cache-mode: true  # required for @Cacheable on Mono return types
 
 # Base URLs are overridden at runtime via environment variables (see docker-compose.yml).
 # Defaults point to the WireMock ports used in local development.
