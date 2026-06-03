@@ -1,9 +1,15 @@
 {
+  "priority": 10,
   "request": {
     "method": "GET",
-    "url": "/insurance/002"
+    "urlPathPattern": "/insurance/[0-9]+"
   },
   "response": {
-    "status": 404
+    "status": 404,
+    "delayDistribution": {
+      "type": "uniform",
+      "lower": 300,
+      "upper": 800
+    }
   }
 }
