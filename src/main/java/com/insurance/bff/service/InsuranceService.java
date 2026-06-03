@@ -5,7 +5,6 @@ import com.insurance.bff.exception.InsuranceNotFoundException;
 import com.insurance.bff.exception.UpstreamServiceException;
 import com.insurance.bff.model.InsuranceData;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -33,7 +32,6 @@ public class InsuranceService {
      * @param patientId the patient ID to look up
      * @return a {@link Mono} emitting data from whichever upstream responds first with 200
      */
-    @Cacheable("insurance")
     public Mono<InsuranceData> getInsuranceData(String patientId) {
         Mono<InsuranceData> monoA = clientA.fetchById(patientId).cache();
         Mono<InsuranceData> monoB = clientB.fetchById(patientId).cache();

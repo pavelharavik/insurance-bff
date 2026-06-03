@@ -19,7 +19,6 @@
 
     <properties>
         <java.version>25</java.version>
-        <resilience4j.version>2.2.0</resilience4j.version>
         <wiremock-spring-boot.version>3.2.0</wiremock-spring-boot.version>
         <jacoco.version>0.8.14</jacoco.version>
         <jacoco.min.line.coverage>0.80</jacoco.min.line.coverage>
@@ -31,34 +30,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
-        </dependency>
-
-        <!-- ── Cache (Caffeine) ──────────────────────────────────────────── -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-cache</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
-        </dependency>
-
-        <!-- ── Resilience4j (circuit breaker) ───────────────────────────── -->
-        <dependency>
-            <groupId>io.github.resilience4j</groupId>
-            <artifactId>resilience4j-spring-boot3</artifactId>
-            <version>${resilience4j.version}</version>
-        </dependency>
-        <!-- Reactor operators for @CircuitBreaker on Mono/Flux return types -->
-        <dependency>
-            <groupId>io.github.resilience4j</groupId>
-            <artifactId>resilience4j-reactor</artifactId>
-            <version>${resilience4j.version}</version>
-        </dependency>
-        <!-- Required for @CircuitBreaker annotations -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
         <!-- ── Observability ─────────────────────────────────────────────── -->

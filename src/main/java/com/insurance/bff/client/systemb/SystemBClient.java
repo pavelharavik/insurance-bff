@@ -3,7 +3,6 @@ package com.insurance.bff.client.systemb;
 import com.insurance.bff.client.AbstractHttpInsuranceClient;
 import com.insurance.bff.mapper.SystemBMapper;
 import com.insurance.bff.model.InsuranceData;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -29,7 +28,6 @@ public class SystemBClient extends AbstractHttpInsuranceClient {
     }
 
     @Override
-    @CircuitBreaker(name = "system-b")
     public Mono<InsuranceData> fetchById(String patientId) {
         return fetch(
                 webClient.get().uri("/insurance/{id}", patientId).accept(MediaType.APPLICATION_XML),

@@ -2,8 +2,6 @@ package com.insurance.bff;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cache.annotation.EnableCaching;
-
 /**
  * Entry point for the Insurance BFF (Backend for Frontend) service.
  *
@@ -15,7 +13,6 @@ import org.springframework.cache.annotation.EnableCaching;
  * </ul>
  */
 @SpringBootApplication
-@EnableCaching
 public class InsuranceBffApplication {
 
     public static void main(String[] args) {

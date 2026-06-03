@@ -4,7 +4,6 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.insurance.bff.exception.InsuranceNotFoundException;
 import com.insurance.bff.exception.UpstreamServiceException;
 import com.insurance.bff.model.InsuranceData;
-import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,12 +37,8 @@ class SystemAClientTest {
     @Autowired
     private SystemAClient client;
 
-    @Autowired
-    private CircuitBreakerRegistry circuitBreakerRegistry;
-
     @BeforeEach
     void setUp() {
-        circuitBreakerRegistry.circuitBreaker("system-a").reset();
         wireMock.resetAll();
     }
 
