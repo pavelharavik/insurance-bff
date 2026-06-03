@@ -11,6 +11,11 @@
     "jsonBody": {
       "id": "001",
       "description": "Patient: Alice Smith, status: active"
+    },
+    "delayDistribution": {
+      "type": "uniform",
+      "lower": 100,
+      "upper": 400
     }
   }
 }

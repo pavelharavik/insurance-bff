@@ -8,8 +8,8 @@
     "status": 404,
     "delayDistribution": {
       "type": "uniform",
-      "lower": 300,
-      "upper": 800
+      "lower": 100,
+      "upper": 400
     }
   }
 }
