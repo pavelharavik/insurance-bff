@@ -1,0 +1,16 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "/patients/001/insurance"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "id": "001",
+      "description": "Patient: Alice Smith, status: active"
+    }
+  }
+}

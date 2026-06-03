@@ -1,0 +1,123 @@
+package com.insurance.bff.client.systemb;
+
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.insurance.bff.exception.InsuranceNotFoundException;
+import com.insurance.bff.exception.UpstreamServiceException;
+import com.insurance.bff.model.InsuranceData;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.wiremock.spring.ConfigureWireMock;
+import org.wiremock.spring.EnableWireMock;
+import org.wiremock.spring.InjectWireMock;
+
+import com.github.tomakehurst.wiremock.http.Fault;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * Integration tests for {@link SystemBClient} using WireMock to simulate System B.
+ * The real {@link com.insurance.bff.mapper.SystemBMapperImpl} runs end-to-end.
+ */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@EnableWireMock(
+        @ConfigureWireMock(name = "system-b", baseUrlProperties = "upstream.system-b.url")
+)
+class SystemBClientTest {
+
+    private static final String PATIENT_ID   = "123";
+    private static final String PATIENT_PATH = "/insurance/" + PATIENT_ID;
+
+    private static final String ACTIVE_XML = """
+            <insurance id="123" first_name="Aliaksei" last_name="Kozel"\
+             birth_date="1990-01-01" is_active="true"/>
+            """;
+
+    @InjectWireMock("system-b")
+    private WireMockServer wireMock;
+
+    @Autowired
+    private SystemBClient client;
+
+    @Autowired
+    private CircuitBreakerRegistry circuitBreakerRegistry;
+
+    @BeforeEach
+    void setUp() {
+        circuitBreakerRegistry.circuitBreaker("system-b").reset();
+        wireMock.resetAll();
+    }
+
+    @Test
+    void fetchById_returnsMappedInsuranceData_on200() {
+        wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/xml")
+                        .withBody(ACTIVE_XML)));
+
+        InsuranceData result = client.fetchById(PATIENT_ID);
+
+        assertThat(result.id()).isEqualTo("123");
+        assertThat(result.name()).isEqualTo("Aliaksei Kozel");
+        assertThat(result.active()).isTrue();
+    }
+
+    @Test
+    void fetchById_mapsInactiveStatus() {
+        wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/xml")
+                        .withBody("""
+                                <insurance id="123" first_name="Aliaksei" last_name="Kozel"\
+                                 birth_date="1990-01-01" is_active="false"/>
+                                """)));
+
+        assertThat(client.fetchById(PATIENT_ID).active()).isFalse();
+    }
+
+    @Test
+    void fetchById_throwsInsuranceNotFoundException_on404() {
+        wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
+                .willReturn(aResponse().withStatus(404)));
+
+        assertThatThrownBy(() -> client.fetchById(PATIENT_ID))
+                .isInstanceOf(InsuranceNotFoundException.class)
+                .hasMessageContaining(PATIENT_ID);
+    }
+
+    @Test
+    void fetchById_throwsUpstreamServiceException_on500() {
+        wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
+                .willReturn(aResponse().withStatus(500)));
+
+        assertThatThrownBy(() -> client.fetchById(PATIENT_ID))
+                .isInstanceOf(UpstreamServiceException.class)
+                .satisfies(ex -> assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(500));
+    }
+
+    @Test
+    void fetchById_throwsUpstreamServiceException_on503() {
+        wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
+                .willReturn(aResponse().withStatus(503)));
+
+        assertThatThrownBy(() -> client.fetchById(PATIENT_ID))
+                .isInstanceOf(UpstreamServiceException.class)
+                .satisfies(ex -> assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(503));
+    }
+
+    @Test
+    void fetchById_throwsUpstreamServiceException503_onConnectionFailure() {
+        wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
+                .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+
+        assertThatThrownBy(() -> client.fetchById(PATIENT_ID))
+                .isInstanceOf(UpstreamServiceException.class)
+                .satisfies(ex -> assertThat(((UpstreamServiceException) ex).getStatusCode()).isEqualTo(503));
+    }
+}

@@ -1,0 +1,16 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "/patients/002/insurance"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "id": "002",
+      "description": "Patient: Bob Johnson, status: inactive"
+    }
+  }
+}

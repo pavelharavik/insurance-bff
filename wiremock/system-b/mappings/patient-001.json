@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "/insurance/001"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/xml"
+    },
+    "body": "<insurance id=\"001\" first_name=\"Alice\" last_name=\"Smith\" birth_date=\"1985-03-15\" is_active=\"true\"/>"
+  }
+}

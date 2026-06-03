@@ -1,0 +1,9 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "/patients/003/insurance"
+  },
+  "response": {
+    "status": 404
+  }
+}

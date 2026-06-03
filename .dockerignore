@@ -1,0 +1,6 @@
+.git/
+src/
+*.md
+.gitignore
+docker-compose.yml
+wiremock/
