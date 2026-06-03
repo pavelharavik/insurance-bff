@@ -1,4 +1,4 @@
-name: BFF-Insurance-CI
+name: BFF-Insurance-R-CI
 
 on:
   push:
@@ -32,4 +32,4 @@ jobs:
           path: target/surefire-reports/
 
       - name: Build Docker image
-        run: docker build -t insurance-bff:${{ github.sha }} .
+        run: docker build -t insurance-bff-reactive:${{ github.sha }} .

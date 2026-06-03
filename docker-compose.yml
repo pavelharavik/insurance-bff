@@ -1,6 +1,6 @@
 services:
 
-  insurance-bff:
+  insurance-bff-reactive:
     build: .
     ports:
       - "8080:8080"
