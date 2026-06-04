@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: insurance-bff-reactive
+    name: insurance-bff
   jackson:
     serialization:
       write-dates-as-timestamps: false  # Instant → "2026-05-29T00:00:00Z", not epoch millis

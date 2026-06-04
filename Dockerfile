@@ -10,9 +10,8 @@ RUN groupadd --system appgroup \
  && useradd  --system --gid appgroup appuser
 USER appuser
 
-COPY target/insurance-bff-reactive-0.0.1-SNAPSHOT.jar app.jar
+COPY target/insurance-bff-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 8080
 
-# --enable-preview is required while Structured Concurrency remains a preview feature
-ENTRYPOINT ["java", "--enable-preview", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -12,9 +12,9 @@
     </parent>
 
     <groupId>com.insurance</groupId>
-    <artifactId>insurance-bff-reactive</artifactId>
+    <artifactId>insurance-bff</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>insurance-bff-reactive</name>
+    <name>insurance-bff</name>
     <description>Backend for Frontend — aggregates patient insurance data from System A and System B (Spring WebFlux)</description>
 
     <properties>
