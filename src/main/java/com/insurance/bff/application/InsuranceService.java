@@ -4,8 +4,8 @@ import com.insurance.bff.domain.exception.InsuranceDataUnavailableException;
 import com.insurance.bff.domain.exception.InsuranceNotFoundException;
 import com.insurance.bff.domain.exception.UpstreamErrorType;
 import com.insurance.bff.domain.model.InsuranceData;
-import com.insurance.bff.domain.port.InsuranceClient;
-import org.springframework.beans.factory.annotation.Qualifier;
+import com.insurance.bff.application.port.SystemAClientPort;
+import com.insurance.bff.application.port.SystemBClientPort;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -19,12 +19,10 @@ import reactor.core.publisher.Mono;
 @Service
 public class InsuranceService {
 
-    private final InsuranceClient clientA;
-    private final InsuranceClient clientB;
+    private final SystemAClientPort clientA;
+    private final SystemBClientPort clientB;
 
-    public InsuranceService(
-            @Qualifier("systemAClient") InsuranceClient clientA,
-            @Qualifier("systemBClient") InsuranceClient clientB) {
+    public InsuranceService(SystemAClientPort clientA, SystemBClientPort clientB) {
         this.clientA = clientA;
         this.clientB = clientB;
     }
