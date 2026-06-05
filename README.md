@@ -143,6 +143,24 @@ Returns the insurance record for the given patient, sourced from whichever upstr
 }
 ```
 
+## IDE setup
+
+### IntelliJ IDEA — Google Java Style
+
+The file [config/intellij-java-google-style.xml](config/intellij-java-google-style.xml) contains the official Google code style scheme for IntelliJ IDEA. It matches the Checkstyle rules enforced by the build (`google_checks.xml`).
+
+**Installation:**
+
+1. Open **Settings** → **Editor** → **Code Style** → **Java**
+2. Click the gear icon (⚙) next to the scheme name → **Import Scheme** → **IntelliJ IDEA code style XML**
+3. Select `config/intellij-java-google-style.xml`
+4. Click **OK** — the scheme **GoogleStyle** will appear in the list
+5. Select **GoogleStyle** as the active scheme and click **Apply**
+
+After applying, use **Code** → **Reformat Code** (`Ctrl+Alt+L`) to auto-format files to the Google style.
+
+> **Tip:** Enable **Reformat code** and **Optimize imports** in **Settings** → **Tools** → **Actions on Save** to keep files consistently formatted on every save.
+
 ## Observability
 
 Actuator endpoints are available at `/actuator`:
