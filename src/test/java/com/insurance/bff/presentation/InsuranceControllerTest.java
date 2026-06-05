@@ -53,28 +53,26 @@ class InsuranceControllerTest {
     }
 
     @Test
-    void getInsurance_returns500_onInsuranceDataUnavailableException500() {
+    void getInsurance_returns500_onInsuranceDataUnavailableError() {
         when(insuranceService.getInsuranceData(PATIENT_ID))
-                .thenReturn(Mono.error(
-                        new InsuranceDataUnavailableException(UpstreamErrorType.ERROR, 500, null)));
+                .thenReturn(Mono.error(new InsuranceDataUnavailableException(UpstreamErrorType.ERROR)));
 
         webTestClient.get().uri("/insurance/{id}", PATIENT_ID)
                 .exchange()
                 .expectStatus().isEqualTo(500)
                 .expectBody()
-                .jsonPath("$.detail").isEqualTo("Upstream service error");
+                .jsonPath("$.detail").isEqualTo("An upstream service error prevented insurance data retrieval");
     }
 
     @Test
-    void getInsurance_returns503_onInsuranceDataUnavailableException503() {
+    void getInsurance_returns503_onInsuranceDataUnavailableUnavailable() {
         when(insuranceService.getInsuranceData(PATIENT_ID))
-                .thenReturn(Mono.error(
-                        new InsuranceDataUnavailableException(UpstreamErrorType.UNAVAILABLE, 503, null)));
+                .thenReturn(Mono.error(new InsuranceDataUnavailableException(UpstreamErrorType.UNAVAILABLE)));
 
         webTestClient.get().uri("/insurance/{id}", PATIENT_ID)
                 .exchange()
                 .expectStatus().isEqualTo(503)
                 .expectBody()
-                .jsonPath("$.detail").isEqualTo("Upstream service error");
+                .jsonPath("$.detail").isEqualTo("Insurance data is temporarily unavailable");
     }
 }

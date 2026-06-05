@@ -3,6 +3,7 @@ package com.insurance.bff.presentation;
 import com.insurance.bff.application.InsuranceService;
 import com.insurance.bff.domain.exception.InsuranceDataUnavailableException;
 import com.insurance.bff.domain.exception.InsuranceNotFoundException;
+import com.insurance.bff.domain.exception.UpstreamErrorType;
 import com.insurance.bff.presentation.exception.HttpException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,6 +37,14 @@ public class InsuranceController {
                 .onErrorMap(InsuranceNotFoundException.class,
                         ex -> new HttpException(404, ex.getMessage(), null))
                 .onErrorMap(InsuranceDataUnavailableException.class,
-                        ex -> new HttpException(ex.getStatusCode(), "Upstream service error", ex.getResponseBody()));
+                        ex -> new HttpException(toHttpStatus(ex.getType()), ex.getMessage(), null));
+    }
+
+    private static int toHttpStatus(UpstreamErrorType type) {
+        return switch (type) {
+            case UNAVAILABLE  -> 503;
+            case CLIENT_ERROR -> 500;
+            case ERROR        -> 500;
+        };
     }
 }

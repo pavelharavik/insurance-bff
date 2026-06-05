@@ -5,6 +5,7 @@ import com.insurance.bff.application.port.SystemAClientPort;
 import com.insurance.bff.application.port.SystemBClientPort;
 import com.insurance.bff.domain.exception.InsuranceDataUnavailableException;
 import com.insurance.bff.domain.exception.InsuranceNotFoundException;
+import com.insurance.bff.domain.exception.UpstreamErrorType;
 import com.insurance.bff.domain.model.InsuranceData;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
@@ -111,7 +112,7 @@ class InsuranceServiceTest {
         StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
                 .expectErrorSatisfies(ex -> {
                     assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class);
-                    assertThat(((InsuranceDataUnavailableException) ex).getStatusCode()).isEqualTo(500);
+                    assertThat(((InsuranceDataUnavailableException) ex).getType()).isEqualTo(UpstreamErrorType.ERROR);
                 })
                 .verify();
     }
@@ -125,7 +126,7 @@ class InsuranceServiceTest {
         StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
                 .expectErrorSatisfies(ex -> {
                     assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class);
-                    assertThat(((InsuranceDataUnavailableException) ex).getStatusCode()).isEqualTo(503);
+                    assertThat(((InsuranceDataUnavailableException) ex).getType()).isEqualTo(UpstreamErrorType.UNAVAILABLE);
                 })
                 .verify();
     }

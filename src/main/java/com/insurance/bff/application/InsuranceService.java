@@ -10,6 +10,8 @@ import com.insurance.bff.domain.model.InsuranceData;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.Map;
+
 /**
  * Orchestrates parallel insurance lookups across System A and System B.
  *
@@ -50,18 +52,28 @@ public class InsuranceService {
 
     private RuntimeException selectByPriority(RuntimeException errorA, RuntimeException errorB, String patientId) {
         RuntimeException winner = priority(errorA) >= priority(errorB) ? errorA : errorB;
+        String detail = extractDetail(winner);
         return switch (winner) {
             case SystemANotFoundException _, SystemBNotFoundException _ ->
                     new InsuranceNotFoundException(patientId);
             case SystemAUnavailableException _, SystemBUnavailableException _ ->
-                    new InsuranceDataUnavailableException(UpstreamErrorType.UNAVAILABLE, 503, null);
+                    new InsuranceDataUnavailableException(UpstreamErrorType.UNAVAILABLE, detail);
             case SystemAClientErrorException _, SystemBClientErrorException _ ->
-                    new InsuranceDataUnavailableException(UpstreamErrorType.CLIENT_ERROR, 400, null);
+                    new InsuranceDataUnavailableException(UpstreamErrorType.CLIENT_ERROR, detail);
             case SystemAServerErrorException _, SystemBServerErrorException _ ->
-                    new InsuranceDataUnavailableException(UpstreamErrorType.ERROR, 500, null);
+                    new InsuranceDataUnavailableException(UpstreamErrorType.ERROR, detail);
             default ->
-                    new InsuranceDataUnavailableException(UpstreamErrorType.ERROR, 500, null);
+                    new InsuranceDataUnavailableException(UpstreamErrorType.ERROR, detail);
         };
+    }
+
+    private static String extractDetail(RuntimeException e) {
+        Map<String, Object> details = switch (e) {
+            case SystemAException ex -> ex.getDetails();
+            case SystemBException ex -> ex.getDetails();
+            default -> Map.of();
+        };
+        return details.isEmpty() ? null : details.toString();
     }
 
     private int priority(RuntimeException e) {
