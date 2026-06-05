@@ -10,11 +10,11 @@ import reactor.core.publisher.Mono;
  */
 public interface SystemBClientPort {
 
-    /**
-     * @param patientId the patient identifier to look up
-     * @return a {@link Mono} emitting normalised insurance data on success,
-     *         or terminating with {@link InsuranceNotFoundException} (404)
-     *         or {@link InsuranceDataUnavailableException} on any other failure
-     */
-    Mono<InsuranceData> fetchById(String patientId);
+  /**
+   * @param patientId the patient identifier to look up
+   * @return a {@link Mono} emitting normalised insurance data on success, or terminating with
+   * {@link InsuranceNotFoundException} (404) or {@link InsuranceDataUnavailableException} on any
+   * other failure
+   */
+  Mono<InsuranceData> fetchById(String patientId);
 }

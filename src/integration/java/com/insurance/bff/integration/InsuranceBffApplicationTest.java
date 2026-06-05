@@ -11,8 +11,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 class InsuranceBffApplicationTest {
 
-    @Test
-    void contextLoads() {
-        // passes if the application context starts without throwing
-    }
+  @Test
+  void contextLoads() {
+    // passes if the application context starts without throwing
+  }
 }

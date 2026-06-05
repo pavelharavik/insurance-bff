@@ -10,4 +10,6 @@ package com.insurance.bff.infrastructure.client.systema;
  * }
  * </pre>
  */
-public record SystemAResponse(String id, String description) {}
+public record SystemAResponse(String id, String description) {
+
+}

@@ -1,6 +1,14 @@
 package com.insurance.bff.application;
 
-import com.insurance.bff.application.exception.*;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.insurance.bff.application.exception.SystemAException;
+import com.insurance.bff.application.exception.SystemANotFoundException;
+import com.insurance.bff.application.exception.SystemAServerErrorException;
+import com.insurance.bff.application.exception.SystemAUnavailableException;
+import com.insurance.bff.application.exception.SystemBException;
+import com.insurance.bff.application.exception.SystemBNotFoundException;
+import com.insurance.bff.application.exception.SystemBUnavailableException;
 import com.insurance.bff.application.port.SystemAClientPort;
 import com.insurance.bff.application.port.SystemBClientPort;
 import com.insurance.bff.domain.exception.InsuranceDataUnavailableException;
@@ -11,123 +19,125 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 class InsuranceServiceTest {
 
-    private static final String        PATIENT_ID = "123";
-    private static final InsuranceData DATA_A     = new InsuranceData("123", "Alice", true);
-    private static final InsuranceData DATA_B     = new InsuranceData("123", "Bob",   false);
+  private static final String PATIENT_ID = "123";
+  private static final InsuranceData DATA_A = new InsuranceData("123", "Alice", true);
+  private static final InsuranceData DATA_B = new InsuranceData("123", "Bob", false);
 
-    private static SystemAClientPort succeedA(InsuranceData data) {
-        return patientId -> Mono.just(data);
-    }
+  private static SystemAClientPort succeedA(InsuranceData data) {
+    return patientId -> Mono.just(data);
+  }
 
-    private static SystemBClientPort succeedB(InsuranceData data) {
-        return patientId -> Mono.just(data);
-    }
+  private static SystemBClientPort succeedB(InsuranceData data) {
+    return patientId -> Mono.just(data);
+  }
 
-    private static SystemAClientPort failA(SystemAException ex) {
-        return patientId -> Mono.error(ex);
-    }
+  private static SystemAClientPort failA(SystemAException ex) {
+    return patientId -> Mono.error(ex);
+  }
 
-    private static SystemBClientPort failB(SystemBException ex) {
-        return patientId -> Mono.error(ex);
-    }
+  private static SystemBClientPort failB(SystemBException ex) {
+    return patientId -> Mono.error(ex);
+  }
 
-    private InsuranceService service(SystemAClientPort a, SystemBClientPort b) {
-        return new InsuranceService(a, b);
-    }
+  private InsuranceService service(SystemAClientPort a, SystemBClientPort b) {
+    return new InsuranceService(a, b);
+  }
 
-    // ── Success cases ──────────────────────────────────────────────────────────
+  // ── Success cases ──────────────────────────────────────────────────────────
 
-    @Test
-    void getInsuranceData_returnsAResult_whenOnlyASucceeds() {
-        var svc = service(succeedA(DATA_A), failB(new SystemBNotFoundException()));
+  @Test
+  void getInsuranceData_returnsAResult_whenOnlyASucceeds() {
+    var svc = service(succeedA(DATA_A), failB(new SystemBNotFoundException()));
 
-        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
-                .expectNext(DATA_A)
-                .verifyComplete();
-    }
+    StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+        .expectNext(DATA_A)
+        .verifyComplete();
+  }
 
-    @Test
-    void getInsuranceData_returnsBResult_whenOnlyBSucceeds() {
-        var svc = service(failA(new SystemANotFoundException()), succeedB(DATA_B));
+  @Test
+  void getInsuranceData_returnsBResult_whenOnlyBSucceeds() {
+    var svc = service(failA(new SystemANotFoundException()), succeedB(DATA_B));
 
-        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
-                .expectNext(DATA_B)
-                .verifyComplete();
-    }
+    StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+        .expectNext(DATA_B)
+        .verifyComplete();
+  }
 
-    @Test
-    void getInsuranceData_returnsEitherResult_whenBothSucceed() {
-        var svc = service(succeedA(DATA_A), succeedB(DATA_B));
+  @Test
+  void getInsuranceData_returnsEitherResult_whenBothSucceed() {
+    var svc = service(succeedA(DATA_A), succeedB(DATA_B));
 
-        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
-                .assertNext(data -> assertThat(data).isIn(DATA_A, DATA_B))
-                .verifyComplete();
-    }
+    StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+        .assertNext(data -> assertThat(data).isIn(DATA_A, DATA_B))
+        .verifyComplete();
+  }
 
-    // ── Error priority cases ───────────────────────────────────────────────────
+  // ── Error priority cases ───────────────────────────────────────────────────
 
-    @Test
-    void getInsuranceData_throws404_whenBothReturn404() {
-        var svc = service(
-                failA(new SystemANotFoundException()),
-                failB(new SystemBNotFoundException()));
+  @Test
+  void getInsuranceData_throws404_whenBothReturn404() {
+    var svc = service(
+        failA(new SystemANotFoundException()),
+        failB(new SystemBNotFoundException()));
 
-        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
-                .expectError(InsuranceNotFoundException.class)
-                .verify();
-    }
+    StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+        .expectError(InsuranceNotFoundException.class)
+        .verify();
+  }
 
-    @Test
-    void getInsuranceData_throwsError_whenAErrorAndB404() {
-        var svc = service(
-                failA(new SystemAServerErrorException()),
-                failB(new SystemBNotFoundException()));
+  @Test
+  void getInsuranceData_throwsError_whenAErrorAndB404() {
+    var svc = service(
+        failA(new SystemAServerErrorException()),
+        failB(new SystemBNotFoundException()));
 
-        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
-                .expectErrorSatisfies(ex -> assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class))
-                .verify();
-    }
+    StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+        .expectErrorSatisfies(
+            ex -> assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class))
+        .verify();
+  }
 
-    @Test
-    void getInsuranceData_throwsUnavailable_whenA404andBUnavailable() {
-        var svc = service(
-                failA(new SystemANotFoundException()),
-                failB(new SystemBUnavailableException()));
+  @Test
+  void getInsuranceData_throwsUnavailable_whenA404andBUnavailable() {
+    var svc = service(
+        failA(new SystemANotFoundException()),
+        failB(new SystemBUnavailableException()));
 
-        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
-                .expectErrorSatisfies(ex -> assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class))
-                .verify();
-    }
+    StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+        .expectErrorSatisfies(
+            ex -> assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class))
+        .verify();
+  }
 
-    @Test
-    void getInsuranceData_throwsError_whenAErrorAndBUnavailable() {
-        var svc = service(
-                failA(new SystemAServerErrorException()),
-                failB(new SystemBUnavailableException()));
+  @Test
+  void getInsuranceData_throwsError_whenAErrorAndBUnavailable() {
+    var svc = service(
+        failA(new SystemAServerErrorException()),
+        failB(new SystemBUnavailableException()));
 
-        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
-                .expectErrorSatisfies(ex -> {
-                    assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class);
-                    assertThat(((InsuranceDataUnavailableException) ex).getType()).isEqualTo(UpstreamErrorType.ERROR);
-                })
-                .verify();
-    }
+    StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+        .expectErrorSatisfies(ex -> {
+          assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class);
+          assertThat(((InsuranceDataUnavailableException) ex).getType()).isEqualTo(
+              UpstreamErrorType.ERROR);
+        })
+        .verify();
+  }
 
-    @Test
-    void getInsuranceData_throwsUnavailable_whenBothUnavailable() {
-        var svc = service(
-                failA(new SystemAUnavailableException()),
-                failB(new SystemBUnavailableException()));
+  @Test
+  void getInsuranceData_throwsUnavailable_whenBothUnavailable() {
+    var svc = service(
+        failA(new SystemAUnavailableException()),
+        failB(new SystemBUnavailableException()));
 
-        StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
-                .expectErrorSatisfies(ex -> {
-                    assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class);
-                    assertThat(((InsuranceDataUnavailableException) ex).getType()).isEqualTo(UpstreamErrorType.UNAVAILABLE);
-                })
-                .verify();
-    }
+    StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+        .expectErrorSatisfies(ex -> {
+          assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class);
+          assertThat(((InsuranceDataUnavailableException) ex).getType()).isEqualTo(
+              UpstreamErrorType.UNAVAILABLE);
+        })
+        .verify();
+  }
 }

@@ -18,33 +18,33 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/insurance")
 public class InsuranceController {
 
-    private final InsuranceService insuranceService;
+  private final InsuranceService insuranceService;
 
-    public InsuranceController(InsuranceService insuranceService) {
-        this.insuranceService = insuranceService;
-    }
+  public InsuranceController(InsuranceService insuranceService) {
+    this.insuranceService = insuranceService;
+  }
 
-    /**
-     * Returns normalised insurance data for the given patient.
-     *
-     * @param patientId patient identifier
-     * @return insurance response with BFF timestamp
-     */
-    @GetMapping("/{patientId}")
-    public Mono<InsuranceResponse> getInsurance(@PathVariable String patientId) {
-        return insuranceService.getInsuranceData(patientId)
-                .map(InsuranceResponse::from)
-                .onErrorMap(InsuranceNotFoundException.class,
-                        ex -> new HttpException(404, ex.getMessage(), null))
-                .onErrorMap(InsuranceDataUnavailableException.class,
-                        ex -> new HttpException(toHttpStatus(ex.getType()), ex.getMessage(), null));
-    }
+  /**
+   * Returns normalised insurance data for the given patient.
+   *
+   * @param patientId patient identifier
+   * @return insurance response with BFF timestamp
+   */
+  @GetMapping("/{patientId}")
+  public Mono<InsuranceResponse> getInsurance(@PathVariable String patientId) {
+    return insuranceService.getInsuranceData(patientId)
+        .map(InsuranceResponse::from)
+        .onErrorMap(InsuranceNotFoundException.class,
+            ex -> new HttpException(404, ex.getMessage(), null))
+        .onErrorMap(InsuranceDataUnavailableException.class,
+            ex -> new HttpException(toHttpStatus(ex.getType()), ex.getMessage(), null));
+  }
 
-    private static int toHttpStatus(UpstreamErrorType type) {
-        return switch (type) {
-            case UNAVAILABLE  -> 503;
-            case CLIENT_ERROR -> 500;
-            case ERROR        -> 500;
-        };
-    }
+  private static int toHttpStatus(UpstreamErrorType type) {
+    return switch (type) {
+      case UNAVAILABLE -> 503;
+      case CLIENT_ERROR -> 500;
+      case ERROR -> 500;
+    };
+  }
 }

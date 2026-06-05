@@ -7,4 +7,6 @@ package com.insurance.bff.domain.model;
  * @param name   patient full name
  * @param active whether the insurance policy is currently active
  */
-public record InsuranceData(String id, String name, boolean active) {}
+public record InsuranceData(String id, String name, boolean active) {
+
+}

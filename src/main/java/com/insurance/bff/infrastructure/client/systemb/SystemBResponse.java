@@ -13,17 +13,19 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
  */
 @JacksonXmlRootElement(localName = "insurance")
 public record SystemBResponse(
-        @JacksonXmlProperty(isAttribute = true)
-        String id,
+    @JacksonXmlProperty(isAttribute = true)
+    String id,
 
-        @JacksonXmlProperty(isAttribute = true, localName = "first_name")
-        String firstName,
+    @JacksonXmlProperty(isAttribute = true, localName = "first_name")
+    String firstName,
 
-        @JacksonXmlProperty(isAttribute = true, localName = "last_name")
-        String lastName,
+    @JacksonXmlProperty(isAttribute = true, localName = "last_name")
+    String lastName,
 
-        @JacksonXmlProperty(isAttribute = true, localName = "birth_date")
-        String birthDate,
+    @JacksonXmlProperty(isAttribute = true, localName = "birth_date")
+    String birthDate,
 
-        @JacksonXmlProperty(isAttribute = true, localName = "is_active")
-        boolean active) {}
+    @JacksonXmlProperty(isAttribute = true, localName = "is_active")
+    boolean active) {
+
+}

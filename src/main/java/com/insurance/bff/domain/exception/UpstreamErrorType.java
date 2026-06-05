@@ -11,7 +11,7 @@ package com.insurance.bff.domain.exception;
  * </ul>
  */
 public enum UpstreamErrorType {
-    UNAVAILABLE,
-    CLIENT_ERROR,
-    ERROR
+  UNAVAILABLE,
+  CLIENT_ERROR,
+  ERROR
 }

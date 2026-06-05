@@ -7,11 +7,11 @@ import com.insurance.bff.domain.model.InsuranceData;
  */
 public interface SystemAMapper {
 
-    /**
-     * Parses the {@code description} field and maps all System A fields to the domain record.
-     *
-     * @param response raw response from System A
-     * @return normalised insurance data
-     */
-    InsuranceData map(SystemAResponse response);
+  /**
+   * Parses the {@code description} field and maps all System A fields to the domain record.
+   *
+   * @param response raw response from System A
+   * @return normalised insurance data
+   */
+  InsuranceData map(SystemAResponse response);
 }

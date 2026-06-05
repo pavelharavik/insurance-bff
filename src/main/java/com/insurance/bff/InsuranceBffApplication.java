@@ -2,6 +2,7 @@ package com.insurance.bff;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+
 /**
  * Entry point for the Insurance BFF (Backend for Frontend) service.
  *
@@ -15,7 +16,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class InsuranceBffApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(InsuranceBffApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(InsuranceBffApplication.class, args);
+  }
 }

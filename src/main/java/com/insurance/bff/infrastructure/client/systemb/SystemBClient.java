@@ -1,8 +1,13 @@
 package com.insurance.bff.infrastructure.client.systemb;
 
-import com.insurance.bff.application.exception.*;
+import com.insurance.bff.application.exception.SystemBClientErrorException;
+import com.insurance.bff.application.exception.SystemBException;
+import com.insurance.bff.application.exception.SystemBNotFoundException;
+import com.insurance.bff.application.exception.SystemBServerErrorException;
+import com.insurance.bff.application.exception.SystemBUnavailableException;
 import com.insurance.bff.application.port.SystemBClientPort;
 import com.insurance.bff.domain.model.InsuranceData;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
@@ -14,8 +19,6 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.Map;
-
 /**
  * Fetches insurance data from System B over HTTP/XML.
  *
@@ -25,38 +28,46 @@ import java.util.Map;
 @Component
 public class SystemBClient implements SystemBClientPort {
 
-    private static final ParameterizedTypeReference<Map<String, Object>> MAP_TYPE =
-            new ParameterizedTypeReference<>() {};
+  private static final ParameterizedTypeReference<Map<String, Object>> MAP_TYPE =
+      new ParameterizedTypeReference<>() {
+      };
 
-    private final WebClient webClient;
-    private final SystemBMapper mapper;
+  private final WebClient webClient;
+  private final SystemBMapper mapper;
 
-    public SystemBClient(
-            @Qualifier("systemBWebClient") WebClient webClient,
-            SystemBMapper mapper) {
-        this.webClient = webClient;
-        this.mapper = mapper;
-    }
+  public SystemBClient(
+      @Qualifier("systemBWebClient") WebClient webClient,
+      SystemBMapper mapper) {
+    this.webClient = webClient;
+    this.mapper = mapper;
+  }
 
-    private static SystemBException resolveException(HttpStatusCode status, Map<String, Object> details) {
-        if (status == HttpStatus.NOT_FOUND)           return new SystemBNotFoundException(details);
-        if (status == HttpStatus.SERVICE_UNAVAILABLE) return new SystemBUnavailableException(details);
-        if (status.is4xxClientError())                return new SystemBClientErrorException(details);
-        return new SystemBServerErrorException(details);
-    }
+  private static SystemBException resolveException(HttpStatusCode status,
+      Map<String, Object> details) {
+      if (status == HttpStatus.NOT_FOUND) {
+          return new SystemBNotFoundException(details);
+      }
+      if (status == HttpStatus.SERVICE_UNAVAILABLE) {
+          return new SystemBUnavailableException(details);
+      }
+      if (status.is4xxClientError()) {
+          return new SystemBClientErrorException(details);
+      }
+    return new SystemBServerErrorException(details);
+  }
 
-    @Override
-    public Mono<InsuranceData> fetchById(String patientId) {
-        return webClient.get().uri("/insurance/{id}", patientId).accept(MediaType.APPLICATION_XML)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response ->
-                        response.bodyToMono(MAP_TYPE)
-                                .onErrorResume(e -> Mono.just(Map.of()))
-                                .defaultIfEmpty(Map.of())
-                                .map(details -> resolveException(response.statusCode(), details)))
-                .bodyToMono(SystemBResponse.class)
-                .onErrorMap(WebClientRequestException.class, e -> new SystemBUnavailableException())
-                .publishOn(Schedulers.boundedElastic())
-                .map(mapper::map);
-    }
+  @Override
+  public Mono<InsuranceData> fetchById(String patientId) {
+    return webClient.get().uri("/insurance/{id}", patientId).accept(MediaType.APPLICATION_XML)
+        .retrieve()
+        .onStatus(HttpStatusCode::isError, response ->
+            response.bodyToMono(MAP_TYPE)
+                .onErrorResume(e -> Mono.just(Map.of()))
+                .defaultIfEmpty(Map.of())
+                .map(details -> resolveException(response.statusCode(), details)))
+        .bodyToMono(SystemBResponse.class)
+        .onErrorMap(WebClientRequestException.class, e -> new SystemBUnavailableException())
+        .publishOn(Schedulers.boundedElastic())
+        .map(mapper::map);
+  }
 }

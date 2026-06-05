@@ -7,11 +7,11 @@ import com.insurance.bff.domain.model.InsuranceData;
  */
 public interface SystemBMapper {
 
-    /**
-     * Maps System B XML fields to the unified domain record.
-     *
-     * @param response raw response from System B
-     * @return normalised insurance data
-     */
-    InsuranceData map(SystemBResponse response);
+  /**
+   * Maps System B XML fields to the unified domain record.
+   *
+   * @param response raw response from System B
+   * @return normalised insurance data
+   */
+  InsuranceData map(SystemBResponse response);
 }

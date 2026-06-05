@@ -1,7 +1,15 @@
 package com.insurance.bff.integration.systemb;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.insurance.bff.application.exception.*;
+import com.github.tomakehurst.wiremock.http.Fault;
+import com.insurance.bff.application.exception.SystemBNotFoundException;
+import com.insurance.bff.application.exception.SystemBServerErrorException;
+import com.insurance.bff.application.exception.SystemBUnavailableException;
 import com.insurance.bff.domain.model.InsuranceData;
 import com.insurance.bff.infrastructure.client.systemb.SystemBClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,101 +22,97 @@ import org.wiremock.spring.EnableWireMock;
 import org.wiremock.spring.InjectWireMock;
 import reactor.test.StepVerifier;
 
-import com.github.tomakehurst.wiremock.http.Fault;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
  * Integration tests for {@link SystemBClient} using WireMock to simulate System B.
  */
 @Tag("integration")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @EnableWireMock(
-        @ConfigureWireMock(name = "system-b", baseUrlProperties = "upstream.system-b.url")
+    @ConfigureWireMock(name = "system-b", baseUrlProperties = "upstream.system-b.url")
 )
 class SystemBClientTest {
 
-    private static final String PATIENT_ID   = "123";
-    private static final String PATIENT_PATH = "/insurance/" + PATIENT_ID;
+  private static final String PATIENT_ID = "123";
+  private static final String PATIENT_PATH = "/insurance/" + PATIENT_ID;
 
-    private static final String ACTIVE_XML =
-            "<insurance id=\"123\" first_name=\"Aliaksei\" last_name=\"Kozel\" birth_date=\"1990-01-01\" is_active=\"true\"/>";
+  private static final String ACTIVE_XML =
+      "<insurance id=\"123\" first_name=\"Aliaksei\" last_name=\"Kozel\" birth_date=\"1990-01-01\" is_active=\"true\"/>";
 
-    @InjectWireMock("system-b")
-    private WireMockServer wireMock;
+  @InjectWireMock("system-b")
+  private WireMockServer wireMock;
 
-    @Autowired
-    private SystemBClient client;
+  @Autowired
+  private SystemBClient client;
 
-    @BeforeEach
-    void setUp() {
-        wireMock.resetAll();
-    }
+  @BeforeEach
+  void setUp() {
+    wireMock.resetAll();
+  }
 
-    @Test
-    void fetchById_returnsMappedInsuranceData_on200() {
-        wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/xml")
-                        .withBody(ACTIVE_XML)));
+  @Test
+  void fetchById_returnsMappedInsuranceData_on200() {
+    wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
+        .willReturn(aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/xml")
+            .withBody(ACTIVE_XML)));
 
-        InsuranceData result = client.fetchById(PATIENT_ID).block();
+    InsuranceData result = client.fetchById(PATIENT_ID).block();
 
-        assertThat(result.id()).isEqualTo("123");
-        assertThat(result.name()).isEqualTo("Aliaksei Kozel");
-        assertThat(result.active()).isTrue();
-    }
+    assertThat(result.id()).isEqualTo("123");
+    assertThat(result.name()).isEqualTo("Aliaksei Kozel");
+    assertThat(result.active()).isTrue();
+  }
 
-    @Test
-    void fetchById_mapsInactiveStatus() {
-        wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/xml")
-                        .withBody("<insurance id=\"123\" first_name=\"Aliaksei\" last_name=\"Kozel\" birth_date=\"1990-01-01\" is_active=\"false\"/>")));
+  @Test
+  void fetchById_mapsInactiveStatus() {
+    wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
+        .willReturn(aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/xml")
+            .withBody(
+                "<insurance id=\"123\" first_name=\"Aliaksei\" last_name=\"Kozel\" birth_date=\"1990-01-01\" is_active=\"false\"/>")));
 
-        assertThat(client.fetchById(PATIENT_ID).block().active()).isFalse();
-    }
+    assertThat(client.fetchById(PATIENT_ID).block().active()).isFalse();
+  }
 
-    @Test
-    void fetchById_throwsSystemBNotFoundException_on404() {
-        wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
-                .willReturn(aResponse().withStatus(404)));
+  @Test
+  void fetchById_throwsSystemBNotFoundException_on404() {
+    wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
+        .willReturn(aResponse().withStatus(404)));
 
-        StepVerifier.create(client.fetchById(PATIENT_ID))
-                .expectError(SystemBNotFoundException.class)
-                .verify();
-    }
+    StepVerifier.create(client.fetchById(PATIENT_ID))
+        .expectError(SystemBNotFoundException.class)
+        .verify();
+  }
 
-    @Test
-    void fetchById_throwsSystemBServerErrorException_on500() {
-        wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
-                .willReturn(aResponse().withStatus(500)));
+  @Test
+  void fetchById_throwsSystemBServerErrorException_on500() {
+    wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
+        .willReturn(aResponse().withStatus(500)));
 
-        StepVerifier.create(client.fetchById(PATIENT_ID))
-                .expectError(SystemBServerErrorException.class)
-                .verify();
-    }
+    StepVerifier.create(client.fetchById(PATIENT_ID))
+        .expectError(SystemBServerErrorException.class)
+        .verify();
+  }
 
-    @Test
-    void fetchById_throwsSystemBUnavailableException_on503() {
-        wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
-                .willReturn(aResponse().withStatus(503)));
+  @Test
+  void fetchById_throwsSystemBUnavailableException_on503() {
+    wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
+        .willReturn(aResponse().withStatus(503)));
 
-        StepVerifier.create(client.fetchById(PATIENT_ID))
-                .expectError(SystemBUnavailableException.class)
-                .verify();
-    }
+    StepVerifier.create(client.fetchById(PATIENT_ID))
+        .expectError(SystemBUnavailableException.class)
+        .verify();
+  }
 
-    @Test
-    void fetchById_throwsSystemBUnavailableException_onConnectionFailure() {
-        wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
-                .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+  @Test
+  void fetchById_throwsSystemBUnavailableException_onConnectionFailure() {
+    wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
+        .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
 
-        StepVerifier.create(client.fetchById(PATIENT_ID))
-                .expectError(SystemBUnavailableException.class)
-                .verify();
-    }
+    StepVerifier.create(client.fetchById(PATIENT_ID))
+        .expectError(SystemBUnavailableException.class)
+        .verify();
+  }
 }

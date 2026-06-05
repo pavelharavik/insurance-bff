@@ -14,13 +14,13 @@ import java.time.Instant;
  * @param active      whether the insurance policy is currently active
  */
 public record InsuranceResponse(
-        String id,
-        String name,
-        @JsonProperty("current_date") Instant currentDate,
-        @JsonProperty("is_active")    boolean active
+    String id,
+    String name,
+    @JsonProperty("current_date") Instant currentDate,
+    @JsonProperty("is_active") boolean active
 ) {
 
-    public static InsuranceResponse from(InsuranceData data) {
-        return new InsuranceResponse(data.id(), data.name(), Instant.now(), data.active());
-    }
+  public static InsuranceResponse from(InsuranceData data) {
+    return new InsuranceResponse(data.id(), data.name(), Instant.now(), data.active());
+  }
 }
