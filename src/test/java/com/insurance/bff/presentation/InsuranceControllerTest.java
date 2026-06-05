@@ -77,4 +77,18 @@ class InsuranceControllerTest {
         .expectBody()
         .jsonPath("$.detail").isEqualTo("Insurance data is temporarily unavailable");
   }
+
+  @Test
+  void getInsurance_returns500_onInsuranceDataUnavailableClientError() {
+    when(insuranceService.getInsuranceData(PATIENT_ID))
+        .thenReturn(
+            Mono.error(new InsuranceDataUnavailableException(UpstreamErrorType.CLIENT_ERROR)));
+
+    webTestClient.get().uri("/insurance/{id}", PATIENT_ID)
+        .exchange()
+        .expectStatus().isEqualTo(500)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("Insurance data request was rejected by the upstream service");
+  }
 }

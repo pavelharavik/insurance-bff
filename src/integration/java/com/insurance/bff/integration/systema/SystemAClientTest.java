@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
+import com.insurance.bff.application.exception.SystemAClientErrorException;
 import com.insurance.bff.application.exception.SystemANotFoundException;
 import com.insurance.bff.application.exception.SystemAServerErrorException;
 import com.insurance.bff.application.exception.SystemAUnavailableException;
@@ -114,6 +115,16 @@ class SystemAClientTest {
 
     StepVerifier.create(client.fetchById(PATIENT_ID))
         .expectError(SystemAUnavailableException.class)
+        .verify();
+  }
+
+  @Test
+  void fetchById_throwsSystemAClientErrorException_on422() {
+    wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
+        .willReturn(aResponse().withStatus(422)));
+
+    StepVerifier.create(client.fetchById(PATIENT_ID))
+        .expectError(SystemAClientErrorException.class)
         .verify();
   }
 }

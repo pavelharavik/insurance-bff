@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
+import com.insurance.bff.application.exception.SystemBClientErrorException;
 import com.insurance.bff.application.exception.SystemBNotFoundException;
 import com.insurance.bff.application.exception.SystemBServerErrorException;
 import com.insurance.bff.application.exception.SystemBUnavailableException;
@@ -113,6 +114,16 @@ class SystemBClientTest {
 
     StepVerifier.create(client.fetchById(PATIENT_ID))
         .expectError(SystemBUnavailableException.class)
+        .verify();
+  }
+
+  @Test
+  void fetchById_throwsSystemBClientErrorException_on422() {
+    wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
+        .willReturn(aResponse().withStatus(422)));
+
+    StepVerifier.create(client.fetchById(PATIENT_ID))
+        .expectError(SystemBClientErrorException.class)
         .verify();
   }
 }

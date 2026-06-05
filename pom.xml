@@ -21,7 +21,7 @@
         <java.version>25</java.version>
         <wiremock-spring-boot.version>3.2.0</wiremock-spring-boot.version>
         <jacoco.version>0.8.14</jacoco.version>
-        <jacoco.min.line.coverage>0.80</jacoco.min.line.coverage>
+        <jacoco.min.line.coverage>0.95</jacoco.min.line.coverage>
     </properties>
 
     <dependencies>

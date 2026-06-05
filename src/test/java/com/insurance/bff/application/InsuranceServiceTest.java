@@ -2,6 +2,7 @@ package com.insurance.bff.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.insurance.bff.application.exception.SystemAClientErrorException;
 import com.insurance.bff.application.exception.SystemAException;
 import com.insurance.bff.application.exception.SystemANotFoundException;
 import com.insurance.bff.application.exception.SystemAServerErrorException;
@@ -9,6 +10,7 @@ import com.insurance.bff.application.exception.SystemAUnavailableException;
 import com.insurance.bff.application.exception.SystemBException;
 import com.insurance.bff.application.exception.SystemBNotFoundException;
 import com.insurance.bff.application.exception.SystemBUnavailableException;
+import java.util.Map;
 import com.insurance.bff.application.port.SystemAClientPort;
 import com.insurance.bff.application.port.SystemBClientPort;
 import com.insurance.bff.domain.exception.InsuranceDataUnavailableException;
@@ -137,6 +139,37 @@ class InsuranceServiceTest {
           assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class);
           assertThat(((InsuranceDataUnavailableException) ex).getType()).isEqualTo(
               UpstreamErrorType.UNAVAILABLE);
+        })
+        .verify();
+  }
+
+  @Test
+  void getInsuranceData_throwsClientError_whenAClientErrorAndBNotFound() {
+    var svc = service(
+        failA(new SystemAClientErrorException()),
+        failB(new SystemBNotFoundException()));
+
+    StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+        .expectErrorSatisfies(ex -> {
+          assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class);
+          assertThat(((InsuranceDataUnavailableException) ex).getType())
+              .isEqualTo(UpstreamErrorType.CLIENT_ERROR);
+        })
+        .verify();
+  }
+
+  @Test
+  void getInsuranceData_includesUpstreamDetail_ofHigherPriorityError() {
+    // A: ERROR (priority 4, wins), B: UNAVAILABLE (priority 2)
+    // detail comes from A because A has the highest priority
+    var svc = service(
+        failA(new SystemAServerErrorException(Map.of("field", "patientId"))),
+        failB(new SystemBUnavailableException()));
+
+    StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
+        .expectErrorSatisfies(ex -> {
+          assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class);
+          assertThat(ex.getMessage()).contains("patientId");
         })
         .verify();
   }
