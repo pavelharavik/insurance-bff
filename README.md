@@ -11,22 +11,27 @@ GET /insurance/{patientId}
 InsuranceController
          │
          ▼
-InsuranceService  ──── @Cacheable("insurance") ──── Caffeine (60 s TTL, max 10 000 entries)
+InsuranceService  ── Mono.firstWithValue() ── both upstreams subscribed concurrently
          │
-         │  StructuredTaskScope — two virtual threads run concurrently
-         │
-         ├──▶ SystemAClient  (@CircuitBreaker "system-a")
+         ├──▶ SystemAClient
          │      GET /patients/{id}/insurance   (JSON)
-         │      SystemAResponse → SystemAMapper → InsuranceData
+         │      SystemAResponse → SystemAMapperImpl → InsuranceData
          │
-         └──▶ SystemBClient  (@CircuitBreaker "system-b")
-                GET /insurance/{id}            (XML)
-                SystemBResponse → SystemBMapper → InsuranceData
+         └──▶ SystemBClient
+                GET /insurance/{id}            (XML, decoded on boundedElastic)
+                SystemBResponse → SystemBMapperImpl → InsuranceData
 
 First successful InsuranceData wins → InsuranceResponse → HTTP 200 JSON
 ```
 
-When both upstreams fail, the error with the highest priority is returned: **500 > 503 > 404**.
+When both upstreams fail, the error with the highest priority is propagated:
+
+| Priority | Upstream error | HTTP status |
+|----------|---------------|-------------|
+| 4 (highest) | 5xx server error | 500 |
+| 3 | 4xx client error (non-404) | 500 |
+| 2 | 503 / connection failure | 503 |
+| 1 (lowest) | 404 not found | 404 |
 
 ## Prerequisites
 
@@ -63,7 +68,7 @@ WireMock stub data:
 ## Building and testing
 
 ```bash
-# Compile, test, and verify coverage (JaCoCo enforces ≥ 80% line coverage)
+# Compile, test, and verify coverage (JaCoCo enforces ≥ 95% line coverage)
 mvn verify
 
 # Tests only, skip coverage check
@@ -84,18 +89,6 @@ upstream:
     url: http://localhost:8082        # override with SYSTEM_B_URL env var
     connect-timeout-ms: 2000
     read-timeout-ms: 5000
-```
-
-Circuit breaker settings (Resilience4j, count-based window of 10 calls, 50% threshold):
-
-```yaml
-resilience4j.circuitbreaker.instances:
-  system-a:
-    waitDurationInOpenState: 30s
-    permittedNumberOfCallsInHalfOpenState: 3
-    ignoredExceptions:
-      - com.insurance.bff.exception.InsuranceNotFoundException
-  system-b:  # same settings
 ```
 
 ## API
@@ -169,4 +162,3 @@ Actuator endpoints are available at `/actuator`:
 |----------|-----|
 | Health (full details) | `GET /actuator/health` |
 | Info | `GET /actuator/info` |
-| Circuit breaker states | `GET /actuator/circuitbreakers` |

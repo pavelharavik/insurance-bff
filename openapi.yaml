@@ -54,18 +54,30 @@ paths:
                 status: 404
                 detail: "No insurance record found for patient: 001"
         "500":
-          description: Both upstreams failed; at least one returned a 500 error
+          description: |
+            Both upstreams failed. At least one returned a 5xx error or an unexpected
+            4xx (not 404/503). The `detail` field contains the specific message.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-              example:
-                type: "about:blank"
-                title: "Internal Server Error"
-                status: 500
-                detail: "Upstream service error"
+              examples:
+                serverError:
+                  summary: Upstream 5xx
+                  value:
+                    type: "about:blank"
+                    title: "Internal Server Error"
+                    status: 500
+                    detail: "An upstream service error prevented insurance data retrieval"
+                clientError:
+                  summary: Unexpected 4xx from upstream
+                  value:
+                    type: "about:blank"
+                    title: "Internal Server Error"
+                    status: 500
+                    detail: "Insurance data request was rejected by the upstream service"
         "503":
-          description: Both upstreams timed out or are unavailable
+          description: Both upstreams timed out or are unavailable (503 / connection failure)
           content:
             application/problem+json:
               schema:
@@ -74,7 +86,7 @@ paths:
                 type: "about:blank"
                 title: "Service Unavailable"
                 status: 503
-                detail: "Upstream service error"
+                detail: "Insurance data is temporarily unavailable"
 
 components:
   schemas:
