@@ -1,14 +1,13 @@
-package com.insurance.bff;
+package com.insurance.bff.integration;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * Smoke test — verifies the full application context assembles without errors.
- *
- * <p>Uses a mock servlet environment (no real HTTP port) to keep startup fast.
- * Actual endpoint behaviour is covered by integration tests in later test classes.
  */
+@Tag("integration")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 class InsuranceBffApplicationTest {
 

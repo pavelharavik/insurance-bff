@@ -1,9 +1,11 @@
-package com.insurance.bff.infrastructure.client.systemb;
+package com.insurance.bff.integration.systemb;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.insurance.bff.application.exception.*;
 import com.insurance.bff.domain.model.InsuranceData;
+import com.insurance.bff.infrastructure.client.systemb.SystemBClient;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,8 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for {@link SystemBClient} using WireMock to simulate System B.
- * The real {@link SystemBMapperImpl} runs end-to-end.
  */
+@Tag("integration")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @EnableWireMock(
         @ConfigureWireMock(name = "system-b", baseUrlProperties = "upstream.system-b.url")
