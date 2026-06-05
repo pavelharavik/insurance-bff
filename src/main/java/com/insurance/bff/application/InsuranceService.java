@@ -63,9 +63,10 @@ public class InsuranceService {
 
     private int priority(UpstreamErrorType type) {
         return switch (type) {
-            case NOT_FOUND   -> 1;
-            case UNAVAILABLE -> 2;
-            case ERROR       -> 3;
+            case NOT_FOUND    -> 1;
+            case UNAVAILABLE  -> 2;
+            case CLIENT_ERROR -> 3;
+            case ERROR        -> 4;
         };
     }
 }

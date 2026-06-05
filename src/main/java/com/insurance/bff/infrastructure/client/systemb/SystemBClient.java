@@ -6,6 +6,7 @@ import com.insurance.bff.domain.exception.InsuranceNotFoundException;
 import com.insurance.bff.domain.exception.UpstreamErrorType;
 import com.insurance.bff.domain.model.InsuranceData;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -33,23 +34,27 @@ public class SystemBClient implements SystemBClientPort {
         this.mapper = mapper;
     }
 
+    private static UpstreamErrorType resolveType(HttpStatusCode status) {
+        if (status == HttpStatus.SERVICE_UNAVAILABLE) return UpstreamErrorType.UNAVAILABLE;
+        if (status.is4xxClientError())                return UpstreamErrorType.CLIENT_ERROR;
+        return UpstreamErrorType.ERROR;
+    }
+
     @Override
     public Mono<InsuranceData> fetchById(String patientId) {
         return webClient.get().uri("/insurance/{id}", patientId).accept(MediaType.APPLICATION_XML)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, response -> {
-                    int status = response.statusCode().value();
-                    if (status == 404) return Mono.just(new InsuranceNotFoundException(patientId));
-                    UpstreamErrorType type = status == 503
-                            ? UpstreamErrorType.UNAVAILABLE
-                            : UpstreamErrorType.ERROR;
+                    HttpStatusCode status = response.statusCode();
+                    if (status == HttpStatus.NOT_FOUND) return Mono.just(new InsuranceNotFoundException(patientId));
+                    UpstreamErrorType type = resolveType(status);
                     return response.bodyToMono(String.class)
                             .defaultIfEmpty("")
-                            .map(body -> new SystemBException(type, status, body));
+                            .map(body -> new SystemBException(type, status.value(), body));
                 })
                 .bodyToMono(SystemBResponse.class)
                 .onErrorMap(WebClientRequestException.class,
-                        e -> new SystemBException(UpstreamErrorType.UNAVAILABLE, 503, null))
+                        e -> new SystemBException(UpstreamErrorType.UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE.value(), null))
                 .publishOn(Schedulers.boundedElastic())
                 .map(mapper::map)
                 .onErrorMap(SystemBException.class,
