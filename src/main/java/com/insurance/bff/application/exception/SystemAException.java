@@ -1,25 +1,25 @@
 package com.insurance.bff.application.exception;
 
-import com.insurance.bff.domain.exception.UpstreamErrorType;
+import java.util.Map;
 
 /**
- * Thrown by the System A adapter to signal an upstream failure before the service
- * applies error-priority logic and produces a business exception.
+ * Base sealed exception for System A upstream failures.
+ * Each subtype represents a distinct failure category.
+ * {@code details} carries the parsed JSON body returned by System A, or internal context
+ * (e.g. a malformed field value) when the failure originates inside the BFF adapter.
  */
-public class SystemAException extends RuntimeException {
+public abstract sealed class SystemAException extends RuntimeException
+        permits SystemANotFoundException, SystemAUnavailableException,
+                SystemAClientErrorException, SystemAServerErrorException {
 
-    private final UpstreamErrorType type;
-    private final int statusCode;
-    private final String responseBody;
+    private final Map<String, Object> details;
 
-    public SystemAException(UpstreamErrorType type, int statusCode, String responseBody) {
-        super("System A error: HTTP " + statusCode);
-        this.type = type;
-        this.statusCode = statusCode;
-        this.responseBody = responseBody;
+    protected SystemAException(String message, Map<String, Object> details) {
+        super(message);
+        this.details = details != null ? details : Map.of();
     }
 
-    public UpstreamErrorType getType() { return type; }
-    public int getStatusCode() { return statusCode; }
-    public String getResponseBody() { return responseBody; }
+    public Map<String, Object> getDetails() {
+        return details;
+    }
 }

@@ -1,7 +1,6 @@
 package com.insurance.bff.application;
 
-import com.insurance.bff.application.exception.SystemAException;
-import com.insurance.bff.application.exception.SystemBException;
+import com.insurance.bff.application.exception.*;
 import com.insurance.bff.application.port.SystemAClientPort;
 import com.insurance.bff.application.port.SystemBClientPort;
 import com.insurance.bff.domain.exception.InsuranceDataUnavailableException;
@@ -17,7 +16,7 @@ import reactor.core.publisher.Mono;
  * <p>Both upstreams are subscribed to concurrently. The first successful result wins.
  * If both fail, the error with the highest priority is propagated:
  * {@link UpstreamErrorType#ERROR} &gt; {@link UpstreamErrorType#CLIENT_ERROR} &gt;
- * {@link UpstreamErrorType#UNAVAILABLE} &gt; {@link UpstreamErrorType#NOT_FOUND}.
+ * {@link UpstreamErrorType#UNAVAILABLE} &gt; not found.
  */
 @Service
 public class InsuranceService {
@@ -50,33 +49,28 @@ public class InsuranceService {
     }
 
     private RuntimeException selectByPriority(RuntimeException errorA, RuntimeException errorB, String patientId) {
-        RuntimeException winner = priority(getType(errorA)) >= priority(getType(errorB)) ? errorA : errorB;
-        UpstreamErrorType winnerType = getType(winner);
-
-        if (winnerType == UpstreamErrorType.NOT_FOUND) {
-            return new InsuranceNotFoundException(patientId);
-        }
+        RuntimeException winner = priority(errorA) >= priority(errorB) ? errorA : errorB;
         return switch (winner) {
-            case SystemAException ex -> new InsuranceDataUnavailableException(ex.getType(), ex.getStatusCode(), ex.getResponseBody());
-            case SystemBException ex -> new InsuranceDataUnavailableException(ex.getType(), ex.getStatusCode(), ex.getResponseBody());
-            default -> new InsuranceDataUnavailableException(winnerType, 500, null);
+            case SystemANotFoundException _, SystemBNotFoundException _ ->
+                    new InsuranceNotFoundException(patientId);
+            case SystemAUnavailableException _, SystemBUnavailableException _ ->
+                    new InsuranceDataUnavailableException(UpstreamErrorType.UNAVAILABLE, 503, null);
+            case SystemAClientErrorException _, SystemBClientErrorException _ ->
+                    new InsuranceDataUnavailableException(UpstreamErrorType.CLIENT_ERROR, 400, null);
+            case SystemAServerErrorException _, SystemBServerErrorException _ ->
+                    new InsuranceDataUnavailableException(UpstreamErrorType.ERROR, 500, null);
+            default ->
+                    new InsuranceDataUnavailableException(UpstreamErrorType.ERROR, 500, null);
         };
     }
 
-    private UpstreamErrorType getType(RuntimeException e) {
+    private int priority(RuntimeException e) {
         return switch (e) {
-            case SystemAException ex -> ex.getType();
-            case SystemBException ex -> ex.getType();
-            default                  -> UpstreamErrorType.ERROR;
-        };
-    }
-
-    private int priority(UpstreamErrorType type) {
-        return switch (type) {
-            case NOT_FOUND    -> 1;
-            case UNAVAILABLE  -> 2;
-            case CLIENT_ERROR -> 3;
-            case ERROR        -> 4;
+            case SystemANotFoundException _, SystemBNotFoundException _ -> 1;
+            case SystemAUnavailableException _, SystemBUnavailableException _ -> 2;
+            case SystemAClientErrorException _, SystemBClientErrorException _ -> 3;
+            case SystemAServerErrorException _, SystemBServerErrorException _ -> 4;
+            default -> 0;
         };
     }
 }

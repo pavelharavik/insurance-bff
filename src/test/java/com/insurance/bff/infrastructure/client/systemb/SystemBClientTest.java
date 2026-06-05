@@ -1,8 +1,7 @@
 package com.insurance.bff.infrastructure.client.systemb;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.insurance.bff.application.exception.SystemBException;
-import com.insurance.bff.domain.exception.UpstreamErrorType;
+import com.insurance.bff.application.exception.*;
 import com.insurance.bff.domain.model.InsuranceData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,55 +71,42 @@ class SystemBClientTest {
     }
 
     @Test
-    void fetchById_throwsSystemBException_on404() {
+    void fetchById_throwsSystemBNotFoundException_on404() {
         wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
                 .willReturn(aResponse().withStatus(404)));
 
         StepVerifier.create(client.fetchById(PATIENT_ID))
-                .expectErrorSatisfies(ex -> {
-                    assertThat(ex).isInstanceOf(SystemBException.class);
-                    assertThat(((SystemBException) ex).getType()).isEqualTo(UpstreamErrorType.NOT_FOUND);
-                    assertThat(((SystemBException) ex).getStatusCode()).isEqualTo(404);
-                })
+                .expectError(SystemBNotFoundException.class)
                 .verify();
     }
 
     @Test
-    void fetchById_throwsSystemBException_on500() {
+    void fetchById_throwsSystemBServerErrorException_on500() {
         wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
                 .willReturn(aResponse().withStatus(500)));
 
         StepVerifier.create(client.fetchById(PATIENT_ID))
-                .expectErrorSatisfies(ex -> {
-                    assertThat(ex).isInstanceOf(SystemBException.class);
-                    assertThat(((SystemBException) ex).getStatusCode()).isEqualTo(500);
-                })
+                .expectError(SystemBServerErrorException.class)
                 .verify();
     }
 
     @Test
-    void fetchById_throwsSystemBException_on503() {
+    void fetchById_throwsSystemBUnavailableException_on503() {
         wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
                 .willReturn(aResponse().withStatus(503)));
 
         StepVerifier.create(client.fetchById(PATIENT_ID))
-                .expectErrorSatisfies(ex -> {
-                    assertThat(ex).isInstanceOf(SystemBException.class);
-                    assertThat(((SystemBException) ex).getStatusCode()).isEqualTo(503);
-                })
+                .expectError(SystemBUnavailableException.class)
                 .verify();
     }
 
     @Test
-    void fetchById_throwsSystemBException503_onConnectionFailure() {
+    void fetchById_throwsSystemBUnavailableException_onConnectionFailure() {
         wireMock.stubFor(get(urlPathEqualTo(PATIENT_PATH))
                 .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
 
         StepVerifier.create(client.fetchById(PATIENT_ID))
-                .expectErrorSatisfies(ex -> {
-                    assertThat(ex).isInstanceOf(SystemBException.class);
-                    assertThat(((SystemBException) ex).getStatusCode()).isEqualTo(503);
-                })
+                .expectError(SystemBUnavailableException.class)
                 .verify();
     }
 }

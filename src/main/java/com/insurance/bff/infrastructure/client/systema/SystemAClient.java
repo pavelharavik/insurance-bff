@@ -1,16 +1,18 @@
 package com.insurance.bff.infrastructure.client.systema;
 
-import com.insurance.bff.application.exception.SystemAException;
+import com.insurance.bff.application.exception.*;
 import com.insurance.bff.application.port.SystemAClientPort;
-import com.insurance.bff.domain.exception.UpstreamErrorType;
 import com.insurance.bff.domain.model.InsuranceData;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Mono;
+
+import java.util.Map;
 
 /**
  * Fetches insurance data from System A over HTTP/JSON.
@@ -19,6 +21,9 @@ import reactor.core.publisher.Mono;
  */
 @Component
 public class SystemAClient implements SystemAClientPort {
+
+    private static final ParameterizedTypeReference<Map<String, Object>> MAP_TYPE =
+            new ParameterizedTypeReference<>() {};
 
     private final WebClient webClient;
     private final SystemAMapper mapper;
@@ -30,27 +35,24 @@ public class SystemAClient implements SystemAClientPort {
         this.mapper = mapper;
     }
 
-    private static UpstreamErrorType resolveType(HttpStatusCode status) {
-        if (status == HttpStatus.NOT_FOUND)           return UpstreamErrorType.NOT_FOUND;
-        if (status == HttpStatus.SERVICE_UNAVAILABLE) return UpstreamErrorType.UNAVAILABLE;
-        if (status.is4xxClientError())                return UpstreamErrorType.CLIENT_ERROR;
-        return UpstreamErrorType.ERROR;
+    private static SystemAException resolveException(HttpStatusCode status, Map<String, Object> details) {
+        if (status == HttpStatus.NOT_FOUND)           return new SystemANotFoundException(details);
+        if (status == HttpStatus.SERVICE_UNAVAILABLE) return new SystemAUnavailableException(details);
+        if (status.is4xxClientError())                return new SystemAClientErrorException(details);
+        return new SystemAServerErrorException(details);
     }
 
     @Override
     public Mono<InsuranceData> fetchById(String patientId) {
         return webClient.get().uri("/patients/{id}/insurance", patientId)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> {
-                    HttpStatusCode status = response.statusCode();
-                    UpstreamErrorType type = resolveType(status);
-                    return response.bodyToMono(String.class)
-                            .defaultIfEmpty("")
-                            .map(body -> new SystemAException(type, status.value(), body));
-                })
+                .onStatus(HttpStatusCode::isError, response ->
+                        response.bodyToMono(MAP_TYPE)
+                                .onErrorResume(e -> Mono.just(Map.of()))
+                                .defaultIfEmpty(Map.of())
+                                .map(details -> resolveException(response.statusCode(), details)))
                 .bodyToMono(SystemAResponse.class)
-                .onErrorMap(WebClientRequestException.class,
-                        e -> new SystemAException(UpstreamErrorType.UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE.value(), null))
+                .onErrorMap(WebClientRequestException.class, e -> new SystemAUnavailableException())
                 .map(mapper::map);
     }
 }

@@ -1,6 +1,6 @@
 package com.insurance.bff.infrastructure.client.systema;
 
-import com.insurance.bff.domain.exception.InsuranceDataUnavailableException;
+import com.insurance.bff.application.exception.SystemAServerErrorException;
 import com.insurance.bff.domain.model.InsuranceData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,10 +47,10 @@ class SystemAMapperImplTest {
     }
 
     @Test
-    void map_throwsInsuranceDataUnavailableException_onMalformedDescription() {
+    void map_throwsSystemAServerErrorException_onMalformedDescription() {
         SystemAResponse response = new SystemAResponse("1", "malformed");
 
         assertThatThrownBy(() -> mapper.map(response))
-                .isInstanceOf(InsuranceDataUnavailableException.class);
+                .isInstanceOf(SystemAServerErrorException.class);
     }
 }

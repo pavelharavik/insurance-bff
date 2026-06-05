@@ -1,12 +1,10 @@
 package com.insurance.bff.application;
 
-import com.insurance.bff.application.exception.SystemAException;
-import com.insurance.bff.application.exception.SystemBException;
+import com.insurance.bff.application.exception.*;
 import com.insurance.bff.application.port.SystemAClientPort;
 import com.insurance.bff.application.port.SystemBClientPort;
 import com.insurance.bff.domain.exception.InsuranceDataUnavailableException;
 import com.insurance.bff.domain.exception.InsuranceNotFoundException;
-import com.insurance.bff.domain.exception.UpstreamErrorType;
 import com.insurance.bff.domain.model.InsuranceData;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
@@ -28,11 +26,11 @@ class InsuranceServiceTest {
         return patientId -> Mono.just(data);
     }
 
-    private static SystemAClientPort failA(RuntimeException ex) {
+    private static SystemAClientPort failA(SystemAException ex) {
         return patientId -> Mono.error(ex);
     }
 
-    private static SystemBClientPort failB(RuntimeException ex) {
+    private static SystemBClientPort failB(SystemBException ex) {
         return patientId -> Mono.error(ex);
     }
 
@@ -44,7 +42,7 @@ class InsuranceServiceTest {
 
     @Test
     void getInsuranceData_returnsAResult_whenOnlyASucceeds() {
-        var svc = service(succeedA(DATA_A), failB(new SystemBException(UpstreamErrorType.NOT_FOUND, 404, null)));
+        var svc = service(succeedA(DATA_A), failB(new SystemBNotFoundException()));
 
         StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
                 .expectNext(DATA_A)
@@ -53,7 +51,7 @@ class InsuranceServiceTest {
 
     @Test
     void getInsuranceData_returnsBResult_whenOnlyBSucceeds() {
-        var svc = service(failA(new SystemAException(UpstreamErrorType.NOT_FOUND, 404, null)), succeedB(DATA_B));
+        var svc = service(failA(new SystemANotFoundException()), succeedB(DATA_B));
 
         StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
                 .expectNext(DATA_B)
@@ -74,8 +72,8 @@ class InsuranceServiceTest {
     @Test
     void getInsuranceData_throws404_whenBothReturn404() {
         var svc = service(
-                failA(new SystemAException(UpstreamErrorType.NOT_FOUND, 404, null)),
-                failB(new SystemBException(UpstreamErrorType.NOT_FOUND, 404, null)));
+                failA(new SystemANotFoundException()),
+                failB(new SystemBNotFoundException()));
 
         StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
                 .expectError(InsuranceNotFoundException.class)
@@ -85,36 +83,30 @@ class InsuranceServiceTest {
     @Test
     void getInsuranceData_throwsError_whenAErrorAndB404() {
         var svc = service(
-                failA(new SystemAException(UpstreamErrorType.ERROR, 500, null)),
-                failB(new SystemBException(UpstreamErrorType.NOT_FOUND, 404, null)));
+                failA(new SystemAServerErrorException()),
+                failB(new SystemBNotFoundException()));
 
         StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
-                .expectErrorSatisfies(ex -> {
-                    assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class);
-                    assertThat(((InsuranceDataUnavailableException) ex).getStatusCode()).isEqualTo(500);
-                })
+                .expectErrorSatisfies(ex -> assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class))
                 .verify();
     }
 
     @Test
     void getInsuranceData_throwsUnavailable_whenA404andBUnavailable() {
         var svc = service(
-                failA(new SystemAException(UpstreamErrorType.NOT_FOUND, 404, null)),
-                failB(new SystemBException(UpstreamErrorType.UNAVAILABLE, 503, null)));
+                failA(new SystemANotFoundException()),
+                failB(new SystemBUnavailableException()));
 
         StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
-                .expectErrorSatisfies(ex -> {
-                    assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class);
-                    assertThat(((InsuranceDataUnavailableException) ex).getStatusCode()).isEqualTo(503);
-                })
+                .expectErrorSatisfies(ex -> assertThat(ex).isInstanceOf(InsuranceDataUnavailableException.class))
                 .verify();
     }
 
     @Test
     void getInsuranceData_throwsError_whenAErrorAndBUnavailable() {
         var svc = service(
-                failA(new SystemAException(UpstreamErrorType.ERROR, 500, null)),
-                failB(new SystemBException(UpstreamErrorType.UNAVAILABLE, 503, null)));
+                failA(new SystemAServerErrorException()),
+                failB(new SystemBUnavailableException()));
 
         StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
                 .expectErrorSatisfies(ex -> {
@@ -127,8 +119,8 @@ class InsuranceServiceTest {
     @Test
     void getInsuranceData_throwsUnavailable_whenBothUnavailable() {
         var svc = service(
-                failA(new SystemAException(UpstreamErrorType.UNAVAILABLE, 503, null)),
-                failB(new SystemBException(UpstreamErrorType.UNAVAILABLE, 503, null)));
+                failA(new SystemAUnavailableException()),
+                failB(new SystemBUnavailableException()));
 
         StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
                 .expectErrorSatisfies(ex -> {
