@@ -1,11 +1,13 @@
 package com.insurance.bff.application;
 
+import com.insurance.bff.application.exception.SystemAException;
+import com.insurance.bff.application.exception.SystemBException;
+import com.insurance.bff.application.port.SystemAClientPort;
+import com.insurance.bff.application.port.SystemBClientPort;
 import com.insurance.bff.domain.exception.InsuranceDataUnavailableException;
 import com.insurance.bff.domain.exception.InsuranceNotFoundException;
 import com.insurance.bff.domain.exception.UpstreamErrorType;
 import com.insurance.bff.domain.model.InsuranceData;
-import com.insurance.bff.application.port.SystemAClientPort;
-import com.insurance.bff.application.port.SystemBClientPort;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -14,7 +16,8 @@ import reactor.core.publisher.Mono;
  *
  * <p>Both upstreams are subscribed to concurrently. The first successful result wins.
  * If both fail, the error with the highest priority is propagated:
- * {@link UpstreamErrorType#ERROR} &gt; {@link UpstreamErrorType#UNAVAILABLE} &gt; {@link UpstreamErrorType#NOT_FOUND}.
+ * {@link UpstreamErrorType#ERROR} &gt; {@link UpstreamErrorType#CLIENT_ERROR} &gt;
+ * {@link UpstreamErrorType#UNAVAILABLE} &gt; {@link UpstreamErrorType#NOT_FOUND}.
  */
 @Service
 public class InsuranceService {
@@ -48,16 +51,23 @@ public class InsuranceService {
 
     private RuntimeException selectByPriority(RuntimeException errorA, RuntimeException errorB, String patientId) {
         RuntimeException winner = priority(getType(errorA)) >= priority(getType(errorB)) ? errorA : errorB;
-        return getType(winner) == UpstreamErrorType.NOT_FOUND
-                ? new InsuranceNotFoundException(patientId)
-                : winner;
+        UpstreamErrorType winnerType = getType(winner);
+
+        if (winnerType == UpstreamErrorType.NOT_FOUND) {
+            return new InsuranceNotFoundException(patientId);
+        }
+        return switch (winner) {
+            case SystemAException ex -> new InsuranceDataUnavailableException(ex.getType(), ex.getStatusCode(), ex.getResponseBody());
+            case SystemBException ex -> new InsuranceDataUnavailableException(ex.getType(), ex.getStatusCode(), ex.getResponseBody());
+            default -> new InsuranceDataUnavailableException(winnerType, 500, null);
+        };
     }
 
     private UpstreamErrorType getType(RuntimeException e) {
         return switch (e) {
-            case InsuranceDataUnavailableException ex -> ex.getType();
-            case InsuranceNotFoundException ignored  -> UpstreamErrorType.NOT_FOUND;
-            default                                  -> UpstreamErrorType.ERROR;
+            case SystemAException ex -> ex.getType();
+            case SystemBException ex -> ex.getType();
+            default                  -> UpstreamErrorType.ERROR;
         };
     }
 

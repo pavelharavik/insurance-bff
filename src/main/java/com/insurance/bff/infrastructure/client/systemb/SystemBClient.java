@@ -1,8 +1,7 @@
 package com.insurance.bff.infrastructure.client.systemb;
 
+import com.insurance.bff.application.exception.SystemBException;
 import com.insurance.bff.application.port.SystemBClientPort;
-import com.insurance.bff.domain.exception.InsuranceDataUnavailableException;
-import com.insurance.bff.domain.exception.InsuranceNotFoundException;
 import com.insurance.bff.domain.exception.UpstreamErrorType;
 import com.insurance.bff.domain.model.InsuranceData;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,6 +34,7 @@ public class SystemBClient implements SystemBClientPort {
     }
 
     private static UpstreamErrorType resolveType(HttpStatusCode status) {
+        if (status == HttpStatus.NOT_FOUND)           return UpstreamErrorType.NOT_FOUND;
         if (status == HttpStatus.SERVICE_UNAVAILABLE) return UpstreamErrorType.UNAVAILABLE;
         if (status.is4xxClientError())                return UpstreamErrorType.CLIENT_ERROR;
         return UpstreamErrorType.ERROR;
@@ -46,7 +46,6 @@ public class SystemBClient implements SystemBClientPort {
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, response -> {
                     HttpStatusCode status = response.statusCode();
-                    if (status == HttpStatus.NOT_FOUND) return Mono.just(new InsuranceNotFoundException(patientId));
                     UpstreamErrorType type = resolveType(status);
                     return response.bodyToMono(String.class)
                             .defaultIfEmpty("")
@@ -56,9 +55,6 @@ public class SystemBClient implements SystemBClientPort {
                 .onErrorMap(WebClientRequestException.class,
                         e -> new SystemBException(UpstreamErrorType.UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE.value(), null))
                 .publishOn(Schedulers.boundedElastic())
-                .map(mapper::map)
-                .onErrorMap(SystemBException.class,
-                        ex -> new InsuranceDataUnavailableException(
-                                ex.getType(), ex.getStatusCode(), ex.getResponseBody()));
+                .map(mapper::map);
     }
 }
