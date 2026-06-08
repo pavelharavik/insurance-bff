@@ -13,7 +13,7 @@ import com.insurance.bff.application.exception.SystemANotFoundException;
 import com.insurance.bff.application.exception.SystemAServerErrorException;
 import com.insurance.bff.application.exception.SystemAUnavailableException;
 import com.insurance.bff.domain.model.InsuranceData;
-import com.insurance.bff.infrastructure.client.systema.SystemAClient;
+import com.insurance.bff.infrastructure.client.systema.SystemAHttpClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ import org.wiremock.spring.InjectWireMock;
 import reactor.test.StepVerifier;
 
 /**
- * Integration tests for {@link SystemAClient} using WireMock to simulate System A.
+ * Integration tests for {@link SystemAHttpClient} using WireMock to simulate System A.
  */
 @Tag("integration")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
@@ -41,7 +41,7 @@ class SystemAClientTest {
   private WireMockServer wireMock;
 
   @Autowired
-  private SystemAClient client;
+  private SystemAHttpClient client;
 
   @BeforeEach
   void setUp() {

@@ -11,8 +11,8 @@ import com.insurance.bff.application.exception.SystemBException;
 import com.insurance.bff.application.exception.SystemBNotFoundException;
 import com.insurance.bff.application.exception.SystemBUnavailableException;
 import java.util.Map;
-import com.insurance.bff.application.port.SystemAClientPort;
-import com.insurance.bff.application.port.SystemBClientPort;
+import com.insurance.bff.application.port.SystemAClient;
+import com.insurance.bff.application.port.SystemBClient;
 import com.insurance.bff.domain.exception.InsuranceDataUnavailableException;
 import com.insurance.bff.domain.exception.InsuranceNotFoundException;
 import com.insurance.bff.domain.exception.UpstreamErrorType;
@@ -27,23 +27,23 @@ class InsuranceServiceTest {
   private static final InsuranceData DATA_A = new InsuranceData("123", "Alice", true);
   private static final InsuranceData DATA_B = new InsuranceData("123", "Bob", false);
 
-  private static SystemAClientPort succeedA(InsuranceData data) {
+  private static SystemAClient succeedA(InsuranceData data) {
     return patientId -> Mono.just(data);
   }
 
-  private static SystemBClientPort succeedB(InsuranceData data) {
+  private static SystemBClient succeedB(InsuranceData data) {
     return patientId -> Mono.just(data);
   }
 
-  private static SystemAClientPort failA(SystemAException ex) {
+  private static SystemAClient failA(SystemAException ex) {
     return patientId -> Mono.error(ex);
   }
 
-  private static SystemBClientPort failB(SystemBException ex) {
+  private static SystemBClient failB(SystemBException ex) {
     return patientId -> Mono.error(ex);
   }
 
-  private InsuranceService service(SystemAClientPort a, SystemBClientPort b) {
+  private InsuranceService service(SystemAClient a, SystemBClient b) {
     return new InsuranceService(a, b);
   }
 

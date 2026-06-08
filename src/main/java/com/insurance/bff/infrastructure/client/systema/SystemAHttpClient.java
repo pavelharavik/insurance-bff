@@ -5,7 +5,7 @@ import com.insurance.bff.application.exception.SystemAException;
 import com.insurance.bff.application.exception.SystemANotFoundException;
 import com.insurance.bff.application.exception.SystemAServerErrorException;
 import com.insurance.bff.application.exception.SystemAUnavailableException;
-import com.insurance.bff.application.port.SystemAClientPort;
+import com.insurance.bff.application.port.SystemAClient;
 import com.insurance.bff.domain.model.InsuranceData;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -23,7 +23,7 @@ import reactor.core.publisher.Mono;
  * <p>Endpoint: {@code GET /patients/{id}/insurance}
  */
 @Component
-public class SystemAClient implements SystemAClientPort {
+public class SystemAHttpClient implements SystemAClient {
 
   private static final ParameterizedTypeReference<Map<String, Object>> MAP_TYPE =
       new ParameterizedTypeReference<>() {
@@ -32,7 +32,7 @@ public class SystemAClient implements SystemAClientPort {
   private final WebClient webClient;
   private final SystemAMapper mapper;
 
-  public SystemAClient(
+  public SystemAHttpClient(
       @Qualifier("systemAWebClient") WebClient webClient,
       SystemAMapper mapper) {
     this.webClient = webClient;

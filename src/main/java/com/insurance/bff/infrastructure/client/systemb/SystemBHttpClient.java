@@ -5,7 +5,7 @@ import com.insurance.bff.application.exception.SystemBException;
 import com.insurance.bff.application.exception.SystemBNotFoundException;
 import com.insurance.bff.application.exception.SystemBServerErrorException;
 import com.insurance.bff.application.exception.SystemBUnavailableException;
-import com.insurance.bff.application.port.SystemBClientPort;
+import com.insurance.bff.application.port.SystemBClient;
 import com.insurance.bff.domain.model.InsuranceData;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,7 +26,7 @@ import reactor.core.scheduler.Schedulers;
  * <p>XML decoding is offloaded to a bounded-elastic thread to avoid blocking Netty event loops.
  */
 @Component
-public class SystemBClient implements SystemBClientPort {
+public class SystemBHttpClient implements SystemBClient {
 
   private static final ParameterizedTypeReference<Map<String, Object>> MAP_TYPE =
       new ParameterizedTypeReference<>() {
@@ -35,7 +35,7 @@ public class SystemBClient implements SystemBClientPort {
   private final WebClient webClient;
   private final SystemBMapper mapper;
 
-  public SystemBClient(
+  public SystemBHttpClient(
       @Qualifier("systemBWebClient") WebClient webClient,
       SystemBMapper mapper) {
     this.webClient = webClient;

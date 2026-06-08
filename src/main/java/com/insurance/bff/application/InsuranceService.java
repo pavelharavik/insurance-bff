@@ -10,8 +10,8 @@ import com.insurance.bff.application.exception.SystemBException;
 import com.insurance.bff.application.exception.SystemBNotFoundException;
 import com.insurance.bff.application.exception.SystemBServerErrorException;
 import com.insurance.bff.application.exception.SystemBUnavailableException;
-import com.insurance.bff.application.port.SystemAClientPort;
-import com.insurance.bff.application.port.SystemBClientPort;
+import com.insurance.bff.application.port.SystemAClient;
+import com.insurance.bff.application.port.SystemBClient;
 import com.insurance.bff.domain.exception.InsuranceDataUnavailableException;
 import com.insurance.bff.domain.exception.InsuranceNotFoundException;
 import com.insurance.bff.domain.exception.UpstreamErrorType;
@@ -31,10 +31,10 @@ import reactor.core.publisher.Mono;
 @Service
 public class InsuranceService {
 
-  private final SystemAClientPort clientA;
-  private final SystemBClientPort clientB;
+  private final SystemAClient clientA;
+  private final SystemBClient clientB;
 
-  public InsuranceService(SystemAClientPort clientA, SystemBClientPort clientB) {
+  public InsuranceService(SystemAClient clientA, SystemBClient clientB) {
     this.clientA = clientA;
     this.clientB = clientB;
   }

@@ -6,9 +6,9 @@ import com.insurance.bff.domain.model.InsuranceData;
 import reactor.core.publisher.Mono;
 
 /**
- * Output port for fetching insurance data from System B.
+ * Output port for fetching insurance data from System A.
  */
-public interface SystemBClientPort {
+public interface SystemAClient {
 
   /**
    * @param patientId the patient identifier to look up

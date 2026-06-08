@@ -12,7 +12,7 @@ import com.insurance.bff.application.exception.SystemBNotFoundException;
 import com.insurance.bff.application.exception.SystemBServerErrorException;
 import com.insurance.bff.application.exception.SystemBUnavailableException;
 import com.insurance.bff.domain.model.InsuranceData;
-import com.insurance.bff.infrastructure.client.systemb.SystemBClient;
+import com.insurance.bff.infrastructure.client.systemb.SystemBHttpClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,7 @@ import org.wiremock.spring.InjectWireMock;
 import reactor.test.StepVerifier;
 
 /**
- * Integration tests for {@link SystemBClient} using WireMock to simulate System B.
+ * Integration tests for {@link SystemBHttpClient} using WireMock to simulate System B.
  */
 @Tag("integration")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
@@ -43,7 +43,7 @@ class SystemBClientTest {
   private WireMockServer wireMock;
 
   @Autowired
-  private SystemBClient client;
+  private SystemBHttpClient client;
 
   @BeforeEach
   void setUp() {
