@@ -22,7 +22,9 @@ public abstract sealed class SystemBException extends RuntimeException
     return details;
   }
 
-  /** System B returned 404 — patient not found. */
+  /**
+   * System B returned 404 — patient not found.
+   */
   public static final class NotFound extends SystemBException {
 
     public NotFound(Map<String, Object> details) {
@@ -34,7 +36,9 @@ public abstract sealed class SystemBException extends RuntimeException
     }
   }
 
-  /** System B is temporarily unavailable (503 or connection failure). */
+  /**
+   * System B is temporarily unavailable (503 or connection failure).
+   */
   public static final class Unavailable extends SystemBException {
 
     public Unavailable(Map<String, Object> details) {
@@ -46,7 +50,9 @@ public abstract sealed class SystemBException extends RuntimeException
     }
   }
 
-  /** System B rejected the request with a 4xx response — indicates an integration bug. */
+  /**
+   * System B rejected the request with a 4xx response — indicates an integration bug.
+   */
   public static final class ClientError extends SystemBException {
 
     public ClientError(Map<String, Object> details) {
@@ -58,7 +64,9 @@ public abstract sealed class SystemBException extends RuntimeException
     }
   }
 
-  /** System B returned a 5xx server error or sent a response the BFF could not process. */
+  /**
+   * System B returned a 5xx server error or sent a response the BFF could not process.
+   */
   public static final class ServerError extends SystemBException {
 
     public ServerError(Map<String, Object> details) {

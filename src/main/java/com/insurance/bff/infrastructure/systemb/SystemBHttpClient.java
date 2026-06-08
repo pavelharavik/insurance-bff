@@ -1,7 +1,7 @@
 package com.insurance.bff.infrastructure.systemb;
 
-import com.insurance.bff.application.insurance.systemb.SystemBException;
 import com.insurance.bff.application.insurance.systemb.SystemBClient;
+import com.insurance.bff.application.insurance.systemb.SystemBException;
 import com.insurance.bff.domain.insurance.InsuranceData;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -40,15 +40,15 @@ public class SystemBHttpClient implements SystemBClient {
 
   private static SystemBException resolveException(HttpStatusCode status,
       Map<String, Object> details) {
-      if (status == HttpStatus.NOT_FOUND) {
-          return new SystemBException.NotFound(details);
-      }
-      if (status == HttpStatus.SERVICE_UNAVAILABLE) {
-          return new SystemBException.Unavailable(details);
-      }
-      if (status.is4xxClientError()) {
-          return new SystemBException.ClientError(details);
-      }
+    if (status == HttpStatus.NOT_FOUND) {
+      return new SystemBException.NotFound(details);
+    }
+    if (status == HttpStatus.SERVICE_UNAVAILABLE) {
+      return new SystemBException.Unavailable(details);
+    }
+    if (status.is4xxClientError()) {
+      return new SystemBException.ClientError(details);
+    }
     return new SystemBException.ServerError(details);
   }
 

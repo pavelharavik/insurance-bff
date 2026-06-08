@@ -2,15 +2,15 @@ package com.insurance.bff.application.insurance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.insurance.bff.application.insurance.systema.SystemAException;
-import com.insurance.bff.application.insurance.systemb.SystemBException;
-import java.util.Map;
 import com.insurance.bff.application.insurance.systema.SystemAClient;
+import com.insurance.bff.application.insurance.systema.SystemAException;
 import com.insurance.bff.application.insurance.systemb.SystemBClient;
+import com.insurance.bff.application.insurance.systemb.SystemBException;
+import com.insurance.bff.domain.insurance.InsuranceData;
 import com.insurance.bff.domain.insurance.InsuranceDataUnavailableException;
 import com.insurance.bff.domain.insurance.InsuranceNotFoundException;
 import com.insurance.bff.domain.insurance.UpstreamErrorType;
-import com.insurance.bff.domain.insurance.InsuranceData;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;

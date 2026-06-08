@@ -3,10 +3,10 @@ package com.insurance.bff.presentation.insurance;
 import static org.mockito.Mockito.when;
 
 import com.insurance.bff.application.insurance.InsuranceService;
+import com.insurance.bff.domain.insurance.InsuranceData;
 import com.insurance.bff.domain.insurance.InsuranceDataUnavailableException;
 import com.insurance.bff.domain.insurance.InsuranceNotFoundException;
 import com.insurance.bff.domain.insurance.UpstreamErrorType;
-import com.insurance.bff.domain.insurance.InsuranceData;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;

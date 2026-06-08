@@ -22,7 +22,9 @@ public abstract sealed class SystemAException extends RuntimeException
     return details;
   }
 
-  /** System A returned 404 — patient not found. */
+  /**
+   * System A returned 404 — patient not found.
+   */
   public static final class NotFound extends SystemAException {
 
     public NotFound(Map<String, Object> details) {
@@ -34,7 +36,9 @@ public abstract sealed class SystemAException extends RuntimeException
     }
   }
 
-  /** System A is temporarily unavailable (503 or connection failure). */
+  /**
+   * System A is temporarily unavailable (503 or connection failure).
+   */
   public static final class Unavailable extends SystemAException {
 
     public Unavailable(Map<String, Object> details) {
@@ -46,7 +50,9 @@ public abstract sealed class SystemAException extends RuntimeException
     }
   }
 
-  /** System A rejected the request with a 4xx response — indicates an integration bug. */
+  /**
+   * System A rejected the request with a 4xx response — indicates an integration bug.
+   */
   public static final class ClientError extends SystemAException {
 
     public ClientError(Map<String, Object> details) {
@@ -58,7 +64,9 @@ public abstract sealed class SystemAException extends RuntimeException
     }
   }
 
-  /** System A returned a 5xx server error or sent a response the BFF could not process. */
+  /**
+   * System A returned a 5xx server error or sent a response the BFF could not process.
+   */
   public static final class ServerError extends SystemAException {
 
     public ServerError(Map<String, Object> details) {

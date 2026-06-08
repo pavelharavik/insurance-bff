@@ -1,7 +1,7 @@
 package com.insurance.bff.infrastructure.systema;
 
-import com.insurance.bff.application.insurance.systema.SystemAException;
 import com.insurance.bff.application.insurance.systema.SystemAClient;
+import com.insurance.bff.application.insurance.systema.SystemAException;
 import com.insurance.bff.domain.insurance.InsuranceData;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -37,15 +37,15 @@ public class SystemAHttpClient implements SystemAClient {
 
   private static SystemAException resolveException(HttpStatusCode status,
       Map<String, Object> details) {
-      if (status == HttpStatus.NOT_FOUND) {
-          return new SystemAException.NotFound(details);
-      }
-      if (status == HttpStatus.SERVICE_UNAVAILABLE) {
-          return new SystemAException.Unavailable(details);
-      }
-      if (status.is4xxClientError()) {
-          return new SystemAException.ClientError(details);
-      }
+    if (status == HttpStatus.NOT_FOUND) {
+      return new SystemAException.NotFound(details);
+    }
+    if (status == HttpStatus.SERVICE_UNAVAILABLE) {
+      return new SystemAException.Unavailable(details);
+    }
+    if (status.is4xxClientError()) {
+      return new SystemAException.ClientError(details);
+    }
     return new SystemAException.ServerError(details);
   }
 

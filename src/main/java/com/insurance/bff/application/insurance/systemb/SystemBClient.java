@@ -1,8 +1,8 @@
 package com.insurance.bff.application.insurance.systemb;
 
+import com.insurance.bff.domain.insurance.InsuranceData;
 import com.insurance.bff.domain.insurance.InsuranceDataUnavailableException;
 import com.insurance.bff.domain.insurance.InsuranceNotFoundException;
-import com.insurance.bff.domain.insurance.InsuranceData;
 import reactor.core.publisher.Mono;
 
 /**
