@@ -1,25 +1,42 @@
 package com.insurance.bff.presentation;
 
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ProblemDetail;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.support.WebExchangeBindException;
 
 /**
- * Formats {@link HttpException} instances into RFC 7807 problem detail responses. Domain-to-HTTP
- * mapping is the responsibility of each controller.
+ * Renders {@link ApiException} and validation errors as {@link ErrorResponse} JSON.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-  @ExceptionHandler(HttpException.class)
-  public ResponseEntity<ProblemDetail> handle(HttpException ex) {
-    HttpStatusCode status = HttpStatusCode.valueOf(ex.getStatusCode());
-    ProblemDetail body = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
-    if (ex.getUpstreamBody() != null) {
-      body.setProperty("upstream_body", ex.getUpstreamBody());
-    }
-    return ResponseEntity.status(status).body(body);
+  @ExceptionHandler(ApiException.class)
+  public ResponseEntity<ErrorResponse> handle(ApiException ex) {
+    return ResponseEntity.status(ex.getStatus()).body(ex.toErrorResponse());
+  }
+
+  @ExceptionHandler(WebExchangeBindException.class)
+  public ResponseEntity<ErrorResponse> handle(WebExchangeBindException ex) {
+    List<ErrorResponse.FieldError> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
+        .map(fe -> new ErrorResponse.FieldError(
+            toFieldErrorCode(fe.getCodes()),
+            fe.getDefaultMessage(),
+            fe.getField()))
+        .toList();
+    ErrorResponse body = new ErrorResponse(
+        TopLevelErrorCode.VALIDATION_ERROR, "Request validation failed", fieldErrors);
+    return ResponseEntity.badRequest().body(body);
+  }
+
+  private static FieldErrorCode toFieldErrorCode(String[] codes) {
+    String code = codes != null && codes.length > 0 ? codes[codes.length - 1] : "";
+    return switch (code) {
+      case "NotBlank", "NotNull", "NotEmpty" -> FieldErrorCode.REQUIRED;
+      case "Size", "Max" -> FieldErrorCode.TOO_LONG;
+      case "Pattern", "Email" -> FieldErrorCode.INVALID_FORMAT;
+      default -> FieldErrorCode.INVALID_VALUE;
+    };
   }
 }

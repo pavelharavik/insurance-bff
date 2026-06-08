@@ -8,6 +8,8 @@ import com.insurance.bff.domain.insurance.InsuranceData;
 import com.insurance.bff.domain.insurance.InsuranceDataUnavailableException;
 import com.insurance.bff.domain.insurance.InsuranceNotFoundException;
 import com.insurance.bff.domain.insurance.UpstreamErrorType;
+import com.insurance.bff.presentation.insurance.InsuranceSearchRequest;
+import java.time.LocalDate;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -23,12 +25,29 @@ import reactor.core.publisher.Mono;
 @Service
 public class InsuranceService {
 
+  private static final Map<InsuranceSearchRequest, String> PATIENT_INDEX = Map.of(
+      new InsuranceSearchRequest("Alice", "Smith", LocalDate.of(1985, 3, 15)), "001",
+      new InsuranceSearchRequest("Bob", "Johnson", LocalDate.of(1990, 1, 15)), "002",
+      new InsuranceSearchRequest("Carol", "White", LocalDate.of(1990, 7, 22)), "003"
+  );
+
   private final SystemAClient clientA;
   private final SystemBClient clientB;
 
   public InsuranceService(SystemAClient clientA, SystemBClient clientB) {
     this.clientA = clientA;
     this.clientB = clientB;
+  }
+
+  /**
+   * Looks up insurance data by search criteria. Resolves the patient ID from the internal index;
+   * unknown patients fall back to ID {@code "999"} which produces a not-found error.
+   *
+   * @param request search criteria
+   * @return a {@link Mono} emitting data from whichever upstream responds first with 200
+   */
+  public Mono<InsuranceData> getInsuranceData(InsuranceSearchRequest request) {
+    return getInsuranceData(PATIENT_INDEX.getOrDefault(request, "999"));
   }
 
   /**
