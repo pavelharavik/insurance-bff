@@ -8,10 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
-import com.insurance.bff.application.exception.SystemAClientErrorException;
-import com.insurance.bff.application.exception.SystemANotFoundException;
-import com.insurance.bff.application.exception.SystemAServerErrorException;
-import com.insurance.bff.application.exception.SystemAUnavailableException;
+import com.insurance.bff.application.exception.SystemAException;
 import com.insurance.bff.domain.model.InsuranceData;
 import com.insurance.bff.infrastructure.client.systema.SystemAHttpClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,7 +81,7 @@ class SystemAClientTest {
         .willReturn(aResponse().withStatus(404)));
 
     StepVerifier.create(client.fetchById(PATIENT_ID))
-        .expectError(SystemANotFoundException.class)
+        .expectError(SystemAException.NotFound.class)
         .verify();
   }
 
@@ -94,7 +91,7 @@ class SystemAClientTest {
         .willReturn(aResponse().withStatus(500)));
 
     StepVerifier.create(client.fetchById(PATIENT_ID))
-        .expectError(SystemAServerErrorException.class)
+        .expectError(SystemAException.ServerError.class)
         .verify();
   }
 
@@ -104,7 +101,7 @@ class SystemAClientTest {
         .willReturn(aResponse().withStatus(503)));
 
     StepVerifier.create(client.fetchById(PATIENT_ID))
-        .expectError(SystemAUnavailableException.class)
+        .expectError(SystemAException.Unavailable.class)
         .verify();
   }
 
@@ -114,7 +111,7 @@ class SystemAClientTest {
         .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
 
     StepVerifier.create(client.fetchById(PATIENT_ID))
-        .expectError(SystemAUnavailableException.class)
+        .expectError(SystemAException.Unavailable.class)
         .verify();
   }
 
@@ -124,7 +121,7 @@ class SystemAClientTest {
         .willReturn(aResponse().withStatus(422)));
 
     StepVerifier.create(client.fetchById(PATIENT_ID))
-        .expectError(SystemAClientErrorException.class)
+        .expectError(SystemAException.ClientError.class)
         .verify();
   }
 }

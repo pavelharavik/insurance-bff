@@ -1,10 +1,6 @@
 package com.insurance.bff.infrastructure.client.systemb;
 
-import com.insurance.bff.application.exception.SystemBClientErrorException;
 import com.insurance.bff.application.exception.SystemBException;
-import com.insurance.bff.application.exception.SystemBNotFoundException;
-import com.insurance.bff.application.exception.SystemBServerErrorException;
-import com.insurance.bff.application.exception.SystemBUnavailableException;
 import com.insurance.bff.application.port.SystemBClient;
 import com.insurance.bff.domain.model.InsuranceData;
 import java.util.Map;
@@ -45,15 +41,15 @@ public class SystemBHttpClient implements SystemBClient {
   private static SystemBException resolveException(HttpStatusCode status,
       Map<String, Object> details) {
       if (status == HttpStatus.NOT_FOUND) {
-          return new SystemBNotFoundException(details);
+          return new SystemBException.NotFound(details);
       }
       if (status == HttpStatus.SERVICE_UNAVAILABLE) {
-          return new SystemBUnavailableException(details);
+          return new SystemBException.Unavailable(details);
       }
       if (status.is4xxClientError()) {
-          return new SystemBClientErrorException(details);
+          return new SystemBException.ClientError(details);
       }
-    return new SystemBServerErrorException(details);
+    return new SystemBException.ServerError(details);
   }
 
   @Override
@@ -66,7 +62,7 @@ public class SystemBHttpClient implements SystemBClient {
                 .defaultIfEmpty(Map.of())
                 .map(details -> resolveException(response.statusCode(), details)))
         .bodyToMono(SystemBResponse.class)
-        .onErrorMap(WebClientRequestException.class, e -> new SystemBUnavailableException())
+        .onErrorMap(WebClientRequestException.class, e -> new SystemBException.Unavailable())
         .publishOn(Schedulers.boundedElastic())
         .map(mapper::map);
   }

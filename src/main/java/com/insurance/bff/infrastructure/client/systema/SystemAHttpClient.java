@@ -1,10 +1,6 @@
 package com.insurance.bff.infrastructure.client.systema;
 
-import com.insurance.bff.application.exception.SystemAClientErrorException;
 import com.insurance.bff.application.exception.SystemAException;
-import com.insurance.bff.application.exception.SystemANotFoundException;
-import com.insurance.bff.application.exception.SystemAServerErrorException;
-import com.insurance.bff.application.exception.SystemAUnavailableException;
 import com.insurance.bff.application.port.SystemAClient;
 import com.insurance.bff.domain.model.InsuranceData;
 import java.util.Map;
@@ -42,15 +38,15 @@ public class SystemAHttpClient implements SystemAClient {
   private static SystemAException resolveException(HttpStatusCode status,
       Map<String, Object> details) {
       if (status == HttpStatus.NOT_FOUND) {
-          return new SystemANotFoundException(details);
+          return new SystemAException.NotFound(details);
       }
       if (status == HttpStatus.SERVICE_UNAVAILABLE) {
-          return new SystemAUnavailableException(details);
+          return new SystemAException.Unavailable(details);
       }
       if (status.is4xxClientError()) {
-          return new SystemAClientErrorException(details);
+          return new SystemAException.ClientError(details);
       }
-    return new SystemAServerErrorException(details);
+    return new SystemAException.ServerError(details);
   }
 
   @Override
@@ -63,7 +59,7 @@ public class SystemAHttpClient implements SystemAClient {
                 .defaultIfEmpty(Map.of())
                 .map(details -> resolveException(response.statusCode(), details)))
         .bodyToMono(SystemAResponse.class)
-        .onErrorMap(WebClientRequestException.class, e -> new SystemAUnavailableException())
+        .onErrorMap(WebClientRequestException.class, e -> new SystemAException.Unavailable())
         .map(mapper::map);
   }
 }

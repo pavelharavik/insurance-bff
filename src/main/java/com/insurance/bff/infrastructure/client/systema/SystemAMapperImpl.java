@@ -1,6 +1,6 @@
 package com.insurance.bff.infrastructure.client.systema;
 
-import com.insurance.bff.application.exception.SystemAServerErrorException;
+import com.insurance.bff.application.exception.SystemAException;
 import com.insurance.bff.domain.model.InsuranceData;
 import java.util.Map;
 import org.springframework.stereotype.Component;
@@ -23,7 +23,7 @@ public class SystemAMapperImpl implements SystemAMapper {
     String description = response.description();
     int statusIndex = description != null ? description.lastIndexOf(STATUS_SEPARATOR) : -1;
     if (statusIndex < 0) {
-      throw new SystemAServerErrorException(Map.of("description", String.valueOf(description)));
+      throw new SystemAException.ServerError(Map.of("description", String.valueOf(description)));
     }
     String name = description.substring(PATIENT_PREFIX.length(), statusIndex);
     String status = description.substring(statusIndex + STATUS_SEPARATOR.length()).trim();

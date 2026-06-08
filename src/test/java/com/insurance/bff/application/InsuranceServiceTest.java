@@ -2,14 +2,8 @@ package com.insurance.bff.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.insurance.bff.application.exception.SystemAClientErrorException;
 import com.insurance.bff.application.exception.SystemAException;
-import com.insurance.bff.application.exception.SystemANotFoundException;
-import com.insurance.bff.application.exception.SystemAServerErrorException;
-import com.insurance.bff.application.exception.SystemAUnavailableException;
 import com.insurance.bff.application.exception.SystemBException;
-import com.insurance.bff.application.exception.SystemBNotFoundException;
-import com.insurance.bff.application.exception.SystemBUnavailableException;
 import java.util.Map;
 import com.insurance.bff.application.port.SystemAClient;
 import com.insurance.bff.application.port.SystemBClient;
@@ -51,7 +45,7 @@ class InsuranceServiceTest {
 
   @Test
   void getInsuranceData_returnsAResult_whenOnlyASucceeds() {
-    var svc = service(succeedA(DATA_A), failB(new SystemBNotFoundException()));
+    var svc = service(succeedA(DATA_A), failB(new SystemBException.NotFound()));
 
     StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
         .expectNext(DATA_A)
@@ -60,7 +54,7 @@ class InsuranceServiceTest {
 
   @Test
   void getInsuranceData_returnsBResult_whenOnlyBSucceeds() {
-    var svc = service(failA(new SystemANotFoundException()), succeedB(DATA_B));
+    var svc = service(failA(new SystemAException.NotFound()), succeedB(DATA_B));
 
     StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
         .expectNext(DATA_B)
@@ -81,8 +75,8 @@ class InsuranceServiceTest {
   @Test
   void getInsuranceData_throws404_whenBothReturn404() {
     var svc = service(
-        failA(new SystemANotFoundException()),
-        failB(new SystemBNotFoundException()));
+        failA(new SystemAException.NotFound()),
+        failB(new SystemBException.NotFound()));
 
     StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
         .expectError(InsuranceNotFoundException.class)
@@ -92,8 +86,8 @@ class InsuranceServiceTest {
   @Test
   void getInsuranceData_throwsError_whenAErrorAndB404() {
     var svc = service(
-        failA(new SystemAServerErrorException()),
-        failB(new SystemBNotFoundException()));
+        failA(new SystemAException.ServerError()),
+        failB(new SystemBException.NotFound()));
 
     StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
         .expectErrorSatisfies(
@@ -104,8 +98,8 @@ class InsuranceServiceTest {
   @Test
   void getInsuranceData_throwsUnavailable_whenA404andBUnavailable() {
     var svc = service(
-        failA(new SystemANotFoundException()),
-        failB(new SystemBUnavailableException()));
+        failA(new SystemAException.NotFound()),
+        failB(new SystemBException.Unavailable()));
 
     StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
         .expectErrorSatisfies(
@@ -116,8 +110,8 @@ class InsuranceServiceTest {
   @Test
   void getInsuranceData_throwsError_whenAErrorAndBUnavailable() {
     var svc = service(
-        failA(new SystemAServerErrorException()),
-        failB(new SystemBUnavailableException()));
+        failA(new SystemAException.ServerError()),
+        failB(new SystemBException.Unavailable()));
 
     StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
         .expectErrorSatisfies(ex -> {
@@ -131,8 +125,8 @@ class InsuranceServiceTest {
   @Test
   void getInsuranceData_throwsUnavailable_whenBothUnavailable() {
     var svc = service(
-        failA(new SystemAUnavailableException()),
-        failB(new SystemBUnavailableException()));
+        failA(new SystemAException.Unavailable()),
+        failB(new SystemBException.Unavailable()));
 
     StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
         .expectErrorSatisfies(ex -> {
@@ -146,8 +140,8 @@ class InsuranceServiceTest {
   @Test
   void getInsuranceData_throwsClientError_whenAClientErrorAndBNotFound() {
     var svc = service(
-        failA(new SystemAClientErrorException()),
-        failB(new SystemBNotFoundException()));
+        failA(new SystemAException.ClientError()),
+        failB(new SystemBException.NotFound()));
 
     StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
         .expectErrorSatisfies(ex -> {
@@ -163,8 +157,8 @@ class InsuranceServiceTest {
     // A: ERROR (priority 4, wins), B: UNAVAILABLE (priority 2)
     // detail comes from A because A has the highest priority
     var svc = service(
-        failA(new SystemAServerErrorException(Map.of("field", "patientId"))),
-        failB(new SystemBUnavailableException()));
+        failA(new SystemAException.ServerError(Map.of("field", "patientId"))),
+        failB(new SystemBException.Unavailable()));
 
     StepVerifier.create(svc.getInsuranceData(PATIENT_ID))
         .expectErrorSatisfies(ex -> {

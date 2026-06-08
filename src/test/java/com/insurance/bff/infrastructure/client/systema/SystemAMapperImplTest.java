@@ -3,7 +3,7 @@ package com.insurance.bff.infrastructure.client.systema;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.insurance.bff.application.exception.SystemAServerErrorException;
+import com.insurance.bff.application.exception.SystemAException;
 import com.insurance.bff.domain.model.InsuranceData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,6 +51,6 @@ class SystemAMapperImplTest {
     SystemAResponse response = new SystemAResponse("1", "malformed");
 
     assertThatThrownBy(() -> mapper.map(response))
-        .isInstanceOf(SystemAServerErrorException.class);
+        .isInstanceOf(SystemAException.ServerError.class);
   }
 }

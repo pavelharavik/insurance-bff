@@ -1,15 +1,7 @@
 package com.insurance.bff.application;
 
-import com.insurance.bff.application.exception.SystemAClientErrorException;
 import com.insurance.bff.application.exception.SystemAException;
-import com.insurance.bff.application.exception.SystemANotFoundException;
-import com.insurance.bff.application.exception.SystemAServerErrorException;
-import com.insurance.bff.application.exception.SystemAUnavailableException;
-import com.insurance.bff.application.exception.SystemBClientErrorException;
 import com.insurance.bff.application.exception.SystemBException;
-import com.insurance.bff.application.exception.SystemBNotFoundException;
-import com.insurance.bff.application.exception.SystemBServerErrorException;
-import com.insurance.bff.application.exception.SystemBUnavailableException;
 import com.insurance.bff.application.port.SystemAClient;
 import com.insurance.bff.application.port.SystemBClient;
 import com.insurance.bff.domain.exception.InsuranceDataUnavailableException;
@@ -63,13 +55,13 @@ public class InsuranceService {
     RuntimeException winner = priority(errorA) >= priority(errorB) ? errorA : errorB;
     String detail = extractDetail(winner);
     return switch (winner) {
-      case SystemANotFoundException _, SystemBNotFoundException _ ->
+      case SystemAException.NotFound _, SystemBException.NotFound _ ->
           new InsuranceNotFoundException(patientId);
-      case SystemAUnavailableException _, SystemBUnavailableException _ ->
+      case SystemAException.Unavailable _, SystemBException.Unavailable _ ->
           new InsuranceDataUnavailableException(UpstreamErrorType.UNAVAILABLE, detail);
-      case SystemAClientErrorException _, SystemBClientErrorException _ ->
+      case SystemAException.ClientError _, SystemBException.ClientError _ ->
           new InsuranceDataUnavailableException(UpstreamErrorType.CLIENT_ERROR, detail);
-      case SystemAServerErrorException _, SystemBServerErrorException _ ->
+      case SystemAException.ServerError _, SystemBException.ServerError _ ->
           new InsuranceDataUnavailableException(UpstreamErrorType.ERROR, detail);
       default -> new InsuranceDataUnavailableException(UpstreamErrorType.ERROR, detail);
     };
@@ -86,10 +78,10 @@ public class InsuranceService {
 
   private int priority(RuntimeException e) {
     return switch (e) {
-      case SystemANotFoundException _, SystemBNotFoundException _ -> 1;
-      case SystemAUnavailableException _, SystemBUnavailableException _ -> 2;
-      case SystemAClientErrorException _, SystemBClientErrorException _ -> 3;
-      case SystemAServerErrorException _, SystemBServerErrorException _ -> 4;
+      case SystemAException.NotFound _, SystemBException.NotFound _ -> 1;
+      case SystemAException.Unavailable _, SystemBException.Unavailable _ -> 2;
+      case SystemAException.ClientError _, SystemBException.ClientError _ -> 3;
+      case SystemAException.ServerError _, SystemBException.ServerError _ -> 4;
       default -> 0;
     };
   }
