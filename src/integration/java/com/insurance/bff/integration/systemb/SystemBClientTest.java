@@ -7,9 +7,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
-import com.insurance.bff.application.exception.SystemBException;
-import com.insurance.bff.domain.model.InsuranceData;
-import com.insurance.bff.infrastructure.client.systemb.SystemBHttpClient;
+import com.insurance.bff.application.insurance.systemb.SystemBException;
+import com.insurance.bff.domain.insurance.InsuranceData;
+import com.insurance.bff.infrastructure.systemb.SystemBHttpClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

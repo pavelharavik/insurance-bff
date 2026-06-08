@@ -1,6 +1,5 @@
 package com.insurance.bff.presentation;
 
-import com.insurance.bff.presentation.exception.HttpException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;

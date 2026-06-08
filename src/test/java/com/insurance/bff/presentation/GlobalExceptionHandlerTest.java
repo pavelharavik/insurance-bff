@@ -2,7 +2,6 @@ package com.insurance.bff.presentation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.insurance.bff.presentation.exception.HttpException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;

@@ -8,9 +8,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
-import com.insurance.bff.application.exception.SystemAException;
-import com.insurance.bff.domain.model.InsuranceData;
-import com.insurance.bff.infrastructure.client.systema.SystemAHttpClient;
+import com.insurance.bff.application.insurance.systema.SystemAException;
+import com.insurance.bff.domain.insurance.InsuranceData;
+import com.insurance.bff.infrastructure.systema.SystemAHttpClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
