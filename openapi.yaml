@@ -4,7 +4,7 @@ info:
   title: Insurance BFF API
   description: >
     Aggregates insurance data from System A (JSON) and System B (XML) in parallel
-    and returns the first successful result. Errors follow RFC 7807 Problem Details.
+    and returns the first successful result.
   version: 0.0.1
 
 servers:
@@ -14,7 +14,7 @@ servers:
 paths:
   /insurance/{patientId}:
     get:
-      summary: Get insurance record for a patient
+      summary: Get insurance record by patient ID
       description: >
         Queries System A and System B concurrently. Returns the first successful
         response. If both upstreams fail, the error with the highest priority is
@@ -45,48 +45,120 @@ paths:
         "404":
           description: No insurance record found in either upstream
           content:
-            application/problem+json:
+            application/json:
               schema:
-                $ref: "#/components/schemas/ProblemDetail"
+                $ref: "#/components/schemas/ErrorResponse"
               example:
-                type: "about:blank"
-                title: "Not Found"
-                status: 404
-                detail: "No insurance record found for patient: 001"
+                errorCode: "NOT_FOUND"
+                message: "No insurance record found for patient: 001"
+                errors: []
         "500":
-          description: |
-            Both upstreams failed. At least one returned a 5xx error or an unexpected
-            4xx (not 404/503). The `detail` field contains the specific message.
+          description: Both upstreams failed with a 5xx or unexpected 4xx error
           content:
-            application/problem+json:
+            application/json:
               schema:
-                $ref: "#/components/schemas/ProblemDetail"
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 serverError:
                   summary: Upstream 5xx
                   value:
-                    type: "about:blank"
-                    title: "Internal Server Error"
-                    status: 500
-                    detail: "An upstream service error prevented insurance data retrieval"
+                    errorCode: "UPSTREAM_ERROR"
+                    message: "An upstream service error prevented insurance data retrieval"
+                    errors: []
                 clientError:
                   summary: Unexpected 4xx from upstream
                   value:
-                    type: "about:blank"
-                    title: "Internal Server Error"
-                    status: 500
-                    detail: "Insurance data request was rejected by the upstream service"
+                    errorCode: "UPSTREAM_ERROR"
+                    message: "Insurance data request was rejected by the upstream service"
+                    errors: []
         "503":
-          description: Both upstreams timed out or are unavailable (503 / connection failure)
+          description: Both upstreams timed out or are unavailable
           content:
-            application/problem+json:
+            application/json:
               schema:
-                $ref: "#/components/schemas/ProblemDetail"
+                $ref: "#/components/schemas/ErrorResponse"
               example:
-                type: "about:blank"
-                title: "Service Unavailable"
-                status: 503
-                detail: "Insurance data is temporarily unavailable"
+                errorCode: "SERVICE_UNAVAILABLE"
+                message: "Insurance data is temporarily unavailable"
+                errors: []
+
+  /insurance/search:
+    post:
+      summary: Search insurance record by patient name and birth date
+      description: >
+        Resolves the patient from the internal index by first name, last name, and
+        birth date, then queries both upstreams concurrently. Unknown patients fall
+        back to a synthetic ID that returns 404 from all upstreams.
+        The request body is validated; constraint violations produce a 400 response
+        with per-field error details.
+      operationId: searchInsurance
+      tags:
+        - Insurance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InsuranceSearchRequest"
+            example:
+              firstName: "Alice"
+              lastName: "Smith"
+              birthDate: "1985-03-15"
+      responses:
+        "200":
+          description: Insurance record found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InsuranceResponse"
+              example:
+                id: "001"
+                name: "Alice Smith"
+                is_active: true
+                current_date: "2026-06-01T10:00:00Z"
+        "400":
+          description: Request body failed validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                errorCode: "VALIDATION_ERROR"
+                message: "Request validation failed"
+                errors:
+                  - errorCode: "REQUIRED"
+                    message: "must not be blank"
+                    field: "firstName"
+        "404":
+          description: No insurance record found for the given patient
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                errorCode: "NOT_FOUND"
+                message: "No insurance record found for patient: 999"
+                errors: []
+        "500":
+          description: Both upstreams failed with a 5xx or unexpected 4xx error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                errorCode: "UPSTREAM_ERROR"
+                message: "An upstream service error prevented insurance data retrieval"
+                errors: []
+        "503":
+          description: Both upstreams timed out or are unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                errorCode: "SERVICE_UNAVAILABLE"
+                message: "Insurance data is temporarily unavailable"
+                errors: []
 
 components:
   schemas:
@@ -116,28 +188,79 @@ components:
           description: UTC timestamp at which this BFF response was generated (ISO 8601)
           example: "2026-06-01T10:00:00Z"
 
-    ProblemDetail:
+    InsuranceSearchRequest:
       type: object
-      description: RFC 7807 Problem Details for HTTP APIs
+      required:
+        - firstName
+        - lastName
       properties:
-        type:
+        firstName:
           type: string
-          format: uri
-          description: URI identifying the problem type
-          example: "about:blank"
-        title:
+          maxLength: 100
+          description: Patient's first name
+          example: "Alice"
+        lastName:
           type: string
-          description: Short, human-readable summary of the problem type
-          example: "Not Found"
-        status:
-          type: integer
-          description: HTTP status code
-          example: 404
-        detail:
+          maxLength: 100
+          description: Patient's last name
+          example: "Smith"
+        birthDate:
           type: string
-          description: Human-readable explanation specific to this occurrence
+          format: date
+          description: Patient's date of birth (must be in the past)
+          example: "1985-03-15"
+
+    ErrorResponse:
+      type: object
+      required:
+        - errorCode
+        - message
+        - errors
+      properties:
+        errorCode:
+          $ref: "#/components/schemas/TopLevelErrorCode"
+        message:
+          type: string
+          description: Human-readable description of the error
           example: "No insurance record found for patient: 001"
-        instance:
+        errors:
+          type: array
+          description: Per-field validation errors; empty for non-validation failures
+          items:
+            $ref: "#/components/schemas/FieldError"
+
+    FieldError:
+      type: object
+      required:
+        - errorCode
+        - message
+        - field
+      properties:
+        errorCode:
+          $ref: "#/components/schemas/FieldErrorCode"
+        message:
           type: string
-          format: uri
-          description: URI identifying the specific occurrence of the problem
+          description: Human-readable description of this specific violation
+          example: "must not be blank"
+        field:
+          type: string
+          description: Name of the offending request field
+          example: "firstName"
+
+    TopLevelErrorCode:
+      type: string
+      description: Top-level error classification
+      enum:
+        - NOT_FOUND
+        - SERVICE_UNAVAILABLE
+        - UPSTREAM_ERROR
+        - VALIDATION_ERROR
+
+    FieldErrorCode:
+      type: string
+      description: Field-level constraint violation type
+      enum:
+        - REQUIRED
+        - TOO_LONG
+        - INVALID_FORMAT
+        - INVALID_VALUE

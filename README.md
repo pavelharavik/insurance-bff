@@ -5,7 +5,8 @@ A Backend-for-Frontend service that aggregates insurance data from two upstream 
 ## Architecture
 
 ```
-GET /insurance/{patientId}
+GET  /insurance/{patientId}
+POST /insurance/search
          │
          ▼
 InsuranceController
@@ -26,12 +27,12 @@ First successful InsuranceData wins → InsuranceResponse → HTTP 200 JSON
 
 When both upstreams fail, the error with the highest priority is propagated:
 
-| Priority | Upstream error | HTTP status |
-|----------|---------------|-------------|
-| 4 (highest) | 5xx server error | 500 |
-| 3 | 4xx client error (non-404) | 500 |
-| 2 | 503 / connection failure | 503 |
-| 1 (lowest) | 404 not found | 404 |
+| Priority | Upstream error | HTTP status | `errorCode` |
+|----------|---------------|-------------|-------------|
+| 4 (highest) | 5xx server error | 500 | `UPSTREAM_ERROR` |
+| 3 | 4xx client error (non-404) | 500 | `UPSTREAM_ERROR` |
+| 2 | 503 / connection failure | 503 | `SERVICE_UNAVAILABLE` |
+| 1 (lowest) | 404 not found | 404 | `NOT_FOUND` |
 
 ## Prerequisites
 
@@ -54,16 +55,24 @@ docker-compose up
 Try it:
 
 ```bash
+# Look up by patient ID
 curl http://localhost:8080/insurance/001
+
+# Search by name and birth date
+curl -X POST http://localhost:8080/insurance/search \
+     -H 'Content-Type: application/json' \
+     -d '{"firstName":"Alice","lastName":"Smith","birthDate":"1985-03-15"}'
 ```
 
 WireMock stub data:
 
-| Patient ID | System A | System B | Expected result |
-|------------|----------|----------|-----------------|
-| `001` | Alice Smith, active | Alice Smith, active | 200 — first responder wins |
-| `002` | Bob Johnson, inactive | 404 | 200 — System A wins |
-| `003` | 404 | Carol White, active | 200 — System B wins |
+| Patient ID | First name | Last name | Birth date | System A | System B |
+|------------|-----------|-----------|------------|----------|----------|
+| `001` | Alice | Smith | 1985-03-15 | active | active |
+| `002` | Bob | Johnson | 1990-01-15 | inactive | 404 |
+| `003` | Carol | White | 1990-07-22 | 404 | active |
+
+Any other input resolves to patient ID `999`, which returns 404 from both upstreams.
 
 ## Building and testing
 
@@ -93,48 +102,14 @@ upstream:
 
 ## API
 
-See [`openapi.yaml`](openapi.yaml) for the full OpenAPI 3.1 specification.
+See [`openapi.yaml`](openapi.yaml) for the full specification.
 
-### `GET /insurance/{patientId}`
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/insurance/{patientId}` | Look up insurance by patient ID |
+| `POST` | `/insurance/search` | Search by first name, last name, and birth date |
 
-Returns the insurance record for the given patient, sourced from whichever upstream responds successfully first.
-
-**Path parameters**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `patientId` | string | Patient identifier |
-
-**Responses**
-
-| Status | Description |
-|--------|-------------|
-| `200 OK` | Insurance record found |
-| `404 Not Found` | No record in either upstream |
-| `500 Internal Server Error` | One or both upstreams returned 5xx |
-| `503 Service Unavailable` | Both upstreams timed out or are unavailable |
-
-**200 response body**
-
-```json
-{
-  "id":           "001",
-  "name":         "Alice Smith",
-  "is_active":    true,
-  "current_date": "2026-06-01T10:00:00Z"
-}
-```
-
-**Error response body** (RFC 7807 Problem Details)
-
-```json
-{
-  "type":   "about:blank",
-  "title":  "Not Found",
-  "status": 404,
-  "detail": "No insurance record found for patient: 001"
-}
-```
+All error responses use the format `{"errorCode": "...", "message": "...", "errors": [...]}`.
 
 ## IDE setup
 
