@@ -11,7 +11,6 @@ import com.insurance.bff.domain.insurance.InsuranceDataUnavailableException;
 import com.insurance.bff.domain.insurance.InsuranceNotFoundException;
 import com.insurance.bff.domain.insurance.UpstreamErrorType;
 import com.insurance.bff.presentation.insurance.InsuranceSearchRequest;
-import java.time.LocalDate;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
@@ -174,7 +173,7 @@ class InsuranceServiceTest {
 
   @Test
   void getInsuranceData_byRequest_resolvesKnownPatientId() {
-    var request = new InsuranceSearchRequest("Alice", "Smith", LocalDate.of(1985, 3, 15));
+    var request = new InsuranceSearchRequest("Alice", "Smith", "1985-03-15");
     var svc = service(succeedA(DATA_A), failB(new SystemBException.NotFound()));
 
     StepVerifier.create(svc.getInsuranceData(request))
@@ -184,7 +183,7 @@ class InsuranceServiceTest {
 
   @Test
   void getInsuranceData_byRequest_usesId999ForUnknownPatient() {
-    var request = new InsuranceSearchRequest("Unknown", "Person", LocalDate.of(2000, 1, 1));
+    var request = new InsuranceSearchRequest("Unknown", "Person", "2000-01-01");
     var svc = service(
         failA(new SystemAException.NotFound()),
         failB(new SystemBException.NotFound()));

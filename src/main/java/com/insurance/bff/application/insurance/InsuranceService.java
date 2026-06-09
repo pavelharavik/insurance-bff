@@ -9,7 +9,6 @@ import com.insurance.bff.domain.insurance.InsuranceDataUnavailableException;
 import com.insurance.bff.domain.insurance.InsuranceNotFoundException;
 import com.insurance.bff.domain.insurance.UpstreamErrorType;
 import com.insurance.bff.presentation.insurance.InsuranceSearchRequest;
-import java.time.LocalDate;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -26,9 +25,9 @@ import reactor.core.publisher.Mono;
 public class InsuranceService {
 
   private static final Map<InsuranceSearchRequest, String> PATIENT_INDEX = Map.of(
-      new InsuranceSearchRequest("Alice", "Smith", LocalDate.of(1985, 3, 15)), "001",
-      new InsuranceSearchRequest("Bob", "Johnson", LocalDate.of(1990, 1, 15)), "002",
-      new InsuranceSearchRequest("Carol", "White", LocalDate.of(1990, 7, 22)), "003"
+      new InsuranceSearchRequest("Alice", "Smith", "1985-03-15"), "001",
+      new InsuranceSearchRequest("Bob", "Johnson", "1990-01-15"), "002",
+      new InsuranceSearchRequest("Carol", "White", "1990-07-22"), "003"
   );
 
   private final SystemAClient clientA;

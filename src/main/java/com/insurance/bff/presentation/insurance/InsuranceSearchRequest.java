@@ -1,16 +1,15 @@
 package com.insurance.bff.presentation.insurance;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import java.time.LocalDate;
 
 /**
  * Search criteria supplied by the caller when looking up a patient's insurance record.
  *
  * @param firstName patient's first name
  * @param lastName  patient's last name
- * @param birthDate patient's date of birth; must be a past date
+ * @param birthDate patient's date of birth in {@code yyyy-MM-dd} format (optional)
  */
 public record InsuranceSearchRequest(
 
@@ -22,8 +21,8 @@ public record InsuranceSearchRequest(
     @Size(max = 100)
     String lastName,
 
-    @Past
-    LocalDate birthDate
+    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "must be in format yyyy-MM-dd")
+    String birthDate
 
 ) {
 

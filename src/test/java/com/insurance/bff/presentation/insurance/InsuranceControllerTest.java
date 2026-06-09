@@ -144,6 +144,19 @@ class InsuranceControllerTest {
   }
 
   @Test
+  void searchInsurance_returns400_whenBirthDateFormatInvalid() {
+    webTestClient.post().uri("/insurance/search")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"firstName\":\"Alice\",\"lastName\":\"Smith\",\"birthDate\":\"15-03-1985\"}")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.errorCode").isEqualTo("VALIDATION_ERROR")
+        .jsonPath("$.errors[0].field").isEqualTo("birthDate")
+        .jsonPath("$.errors[0].errorCode").isEqualTo("INVALID_FORMAT");
+  }
+
+  @Test
   void searchInsurance_returns404_onInsuranceNotFoundException() {
     when(insuranceService.getInsuranceData(any(InsuranceSearchRequest.class)))
         .thenReturn(Mono.error(new InsuranceNotFoundException("999")));
