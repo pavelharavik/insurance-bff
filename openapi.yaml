@@ -206,8 +206,8 @@ components:
           example: "Smith"
         birthDate:
           type: string
-          format: date
-          description: Patient's date of birth (must be in the past)
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: Patient's date of birth in yyyy-MM-dd format (optional)
           example: "1985-03-15"
 
     ErrorResponse:
